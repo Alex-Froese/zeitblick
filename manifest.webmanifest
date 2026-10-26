@@ -1,0 +1,25 @@
+{
+  "name": "Zeitblick – Kalender, Aufgaben & Fokus",
+  "short_name": "Zeitblick",
+  "description": "Kalender, Eisenhower-Matrix, To-dos und Fokus – privat und geschäftlich, auf allen Geräten.",
+  "lang": "de",
+  "start_url": "./?source=pwa#/start",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#f2f4f6",
+  "theme_color": "#1b4f72",
+  "categories": ["productivity", "business"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Neue Aufgabe", "url": "./?open=newtask", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Fokus starten", "url": "./?open=focus", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Kalender", "url": "./#/kalender", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Eisenhower-Matrix", "url": "./#/matrix", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
