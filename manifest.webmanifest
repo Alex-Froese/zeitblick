@@ -1,0 +1,24 @@
+{
+  "name": "Zeitblick – Lebenszentrale",
+  "short_name": "Zeitblick",
+  "description": "Deine Lebenszentrale: Vorgänge, Kalender mit Timeboxing, Matrix, Fokus, Gewohnheiten, Notizen, Ziele und Beziehungen – auf allen Geräten.",
+  "lang": "de",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f7f8f9",
+  "theme_color": "#ffffff",
+  "categories": ["productivity", "lifestyle"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "In die Inbox schreiben", "url": "./?open=capture", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Neuer Vorgang", "url": "./?open=newtask", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Fokus starten", "url": "./?open=focus", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Kalender", "url": "./#/kalender", "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
