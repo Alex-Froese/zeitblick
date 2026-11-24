@@ -6,6 +6,8 @@ import { chime, vibrate } from './audio.js';
 import { A } from './app-api.js';
 
 let st = null; // { h, k, idx, started, stepStart, pausedAt, pausedMs, done:Set, timer, el }
+// Ton im Player: Gerät erlaubt Töne (S.local.sound) und die Routine will sie (eigener Wert oder global, Zeitblick 4).
+const tonAn = () => S.local.sound && C.einst(S.getData(), st && st.h, 'routinen.ton') !== false;
 
 const RING_R = 92, RING_C = 2 * Math.PI * RING_R;
 
@@ -141,7 +143,7 @@ function tick() {
     clock.textContent = left >= 0 ? fmtClock(left) : '+' + fmtClock(-left);
     clock.classList.toggle('over', left < 0);
     ring.setAttribute('stroke-dashoffset', String(RING_C * Math.max(0, 1 - Math.min(1, sec / plan))));
-    if (left < 0 && !st.alerted) { st.alerted = true; if (S.local.sound) chime('soft'); vibrate([60, 60, 60]); }
+    if (left < 0 && !st.alerted) { st.alerted = true; if (tonAn()) chime('soft'); vibrate([60, 60, 60]); }
   } else {
     clock.textContent = fmtClock(sec);
     ring.setAttribute('stroke-dashoffset', String(RING_C * (1 - ((sec % 60) / 60))));
@@ -174,7 +176,7 @@ function stepDone(btn) {
   if (!s0) return;
   const was = st.done.has(s0.id);
   st.done.add(s0.id);
-  if (!was) { saveDone(); burst(btn, 'var(--rp, var(--accent))'); vibrate(10); if (S.local.sound) chime('done'); }
+  if (!was) { saveDone(); burst(btn, 'var(--rp, var(--accent))'); vibrate(10); if (tonAn()) chime('done'); }
   const next = steps.findIndex((x, i) => i > st.idx && !st.done.has(x.id));
   const anyOpen = steps.findIndex(x => !st.done.has(x.id));
   if (next >= 0) goStep(next);

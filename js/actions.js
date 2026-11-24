@@ -91,7 +91,7 @@ export function handleKey(e, ctx) {
 
 /* ---------------- Übersicht aller Kürzel ---------------- */
 export function openShortcuts() {
-  sheet({
+  sheet({ auswahl: true,
     title: 'Tastenkürzel', cls: 'sheet-keys',
     body: `<div class="search-box" style="margin-bottom:10px">${icon('search', 16)}<input data-ksq placeholder="Aktion oder Taste suchen …" autofocus aria-label="Kürzel suchen"></div>
       <div data-klist></div>

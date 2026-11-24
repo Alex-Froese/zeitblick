@@ -47,7 +47,7 @@ export function openBell(counts) {
           <button class="icon-btn sm" data-del="${esc(x.id)}" aria-label="Entfernen">${icon('x', 14)}</button></div>`).join('')
       : '<div class="empty" style="padding:22px 8px"><b>Keine Erinnerungen</b><div class="small">Erinnerungen bleiben hier stehen, bis du sie entfernst oder die Sache erledigt ist.</div></div>'}</div>`;
   };
-  const sh = sheet({
+  const sh = sheet({ auswahl: true,
     title: 'Mitteilungen', side: !isMobile(), cls: 'bell-sheet',
     body: '<div data-bbody></div>',
     footer: `<a class="btn btn-ghost" href="#/einstellungen/benachrichtigungen" data-close>${icon('settings', 14)}Benachrichtigungen einstellen</a>`,

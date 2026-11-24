@@ -1,4 +1,4 @@
-// Zeitblick 3 – Lebenszentrale: Start, Navigation, Rahmen, Aktionen, Tastenkürzel
+// Zeitblick 4 – Lebenszentrale: Start, Navigation, Rahmen, Aktionen, Tastenkürzel (am Laptop mit dem Zeitblick-Kern)
 import * as C from './core.js';
 import * as S from './store.js';
 import * as SY from './sync.js';
@@ -15,6 +15,11 @@ import { openBell } from './bell.js';
 import { startRoutine } from './player.js';
 import { openLinkPicker } from './links.js';
 import { seedDemo, removeDemo, hasDemo, seedTemplates } from './demo.js';
+import * as KR from './kern.js';
+import * as E from './entwuerfe.js';
+import * as Dock from './dock.js';
+import * as U from './umzug.js';
+import * as L from './laptop.js';
 import * as Heute from './views/heute.js';
 import * as Inbox from './views/inbox.js';
 import * as Vg from './views/vorgaenge.js';
@@ -264,6 +269,12 @@ function render() {
   A.applyUi();
   const main = document.getElementById('main');
   if (!main) return;
+  // Umzug von der alten Adresse (nur am Laptop-Kern): eigene Seite, die auf die Daten wartet
+  if (KR.aktiv && /^#\/umzug/.test(location.hash)) {
+    if (main.dataset.view !== 'umzug') { main.dataset.view = 'umzug'; U.kernSeite(main); }
+    document.title = `${KR.praefix}Zeitblick · Umzug`;
+    return;
+  }
   const ae = document.activeElement;
   const keep = ae && main.contains(ae) && ae.id ? { id: ae.id, v: ae.value, s: ae.selectionStart, e: ae.selectionEnd } : null;
   const scrolls = {};
@@ -290,7 +301,8 @@ function render() {
     if (el) { try { el.focus({ preventScroll: true }); if (keep.v !== undefined && el.value !== undefined && el.value !== keep.v) el.value = keep.v; if (el.setSelectionRange && keep.s != null) el.setSelectionRange(keep.s, keep.e); } catch { } }
   }
   updateShell(route);
-  document.title = `${M.name} – Zeitblick`;
+  // Am Laptop (Kern) heißen Fenster „Zeitblick · Ansicht“, damit der Kern sie findet und ausweist (01-systemlandschaft.md).
+  document.title = KR.aktiv ? `${KR.praefix}Zeitblick · ${M.name}` : `${M.name} – Zeitblick`;
 }
 
 /* ---------------- Vorgänge: Erledigen / Verwerfen / Löschen (immer mit Rückfrage) ---------------- */
@@ -428,7 +440,7 @@ const NEW_ITEMS = [
 function newMenu(anchor) {
   const html = `<div class="menu">${NEW_ITEMS.map(x => x ? `<button data-new="${x[3]}">${icon(x[2], 16)}${x[1]}<span class="sp"></span>${K.keyOf(x[3]) ? K.prettyCombo(K.keyOf(x[3])) : ''}</button>` : '<hr>').join('')}</div>`;
   const run = id => { closePopover(); K.run(id); };
-  if (isMobile() || !anchor) sheet({ title: 'Neu anlegen', cls: 'sheet-sm', body: html, onMount: (el, close) => el.addEventListener('click', e => { const b = e.target.closest('[data-new]'); if (b) { close(); run(b.dataset.new); } }) });
+  if (isMobile() || !anchor) sheet({ auswahl: true, title: 'Neu anlegen', cls: 'sheet-sm', body: html, onMount: (el, close) => el.addEventListener('click', e => { const b = e.target.closest('[data-new]'); if (b) { close(); run(b.dataset.new); } }) });
   else popover(anchor, html, { width: 250, place: 'below', onMount: el => el.addEventListener('click', e => { const b = e.target.closest('[data-new]'); if (b) run(b.dataset.new); }) });
 }
 
@@ -436,7 +448,7 @@ function moreMenu() {
   const c = counts();
   const shown = new Set(flatNav().filter(m => m.id !== 'einstellungen').slice(0, 4).map(m => m.id));
   const items = flatNav().filter(m => !shown.has(m.id));
-  sheet({
+  sheet({ auswahl: true,
     title: 'Mehr', cls: 'sheet-sm',
     body: `<div class="menu">${items.map(m => `<a href="#/${m.id}">${icon(m.icon, 17)}${m.name}${m.id === 'gewohnheiten' && c.habitsOpen ? `<span class="sp"></span><span class="small muted">${c.habitsOpen}</span>` : ''}${m.id === 'notizen' && c.notesOpen ? `<span class="sp"></span><span class="small muted">${c.notesOpen}</span>` : ''}</a>`).join('')}
       <hr><button data-m="new">${icon('plus', 17)}Neu anlegen</button><button data-m="search">${icon('search', 17)}Suchen</button><button data-m="theme">${icon(themeIcon(), 17)}Farbmodus wechseln</button><button data-m="sync">${icon('sync', 17)}Jetzt synchronisieren</button></div>`,
@@ -480,7 +492,7 @@ A.openItem = (c, id) => {
 function openSearch() {
   closePopover();
   const cmds = K.ACTIONS.filter(a => a.palette !== false).map(a => ({ k: K.keyOf(a.id) ? K.keyOf(a.id) : a.group, t: a.name, run: () => a.run(), cmd: true }));
-  sheet({
+  sheet({ auswahl: true,
     title: null, cls: 'sheet-sm sheet-search', label: 'Suche',
     body: `<div class="search-box">${icon('search', 18)}<input data-sq placeholder="Suchen oder Befehl eingeben …" autofocus aria-label="Suchen"></div><div data-sres style="margin-top:8px;max-height:62vh;overflow:auto"></div>`,
     onMount: (el, close) => {
@@ -634,10 +646,12 @@ async function handlePair() {
   history.replaceState(null, '', location.pathname + '#/heute');
   let p;
   try { p = SY.readPairPayload(m[1]); } catch { toast('Der Kopplungscode ist ungültig', { kind: 'bad' }); return; }
-  const ok = await confirmDialog('Dieses Gerät mit deinem Zeitblick-Sync verbinden? Danach sind alle Daten auf allen Geräten gleich.', { ok: 'Verbinden', title: 'Gerät verbinden' });
+  if (KR.aktiv) { toast('Am Laptop verbindet der Kern den Sync selbst (Einstellungen → Sync).'); return; }
+  if (p.v !== 4 || !p.k) { toast('Dieser Kopplungscode ist von Zeitblick 3 und unverschlüsselt. Bitte am Laptop unter Einstellungen → Sync einen neuen QR-Code anzeigen.', { kind: 'bad', ms: 9000 }); return; }
+  const ok = await confirmDialog('Dieses Gerät mit deinem verschlüsselten Zeitblick-Sync verbinden? Danach sind alle Daten auf allen Geräten gleich.', { ok: 'Verbinden', title: 'Gerät verbinden' });
   if (!ok) return;
   try {
-    await SY.connect(p.t, p.g);
+    await SY.connect(p.t, p.g, p.k);
     if (p.n && !S.settings().ntfy.topic) S.setSettingPath('ntfy.topic', p.n);
     toast('Gerät verbunden – alles wird synchronisiert');
   } catch (e) { toast(esc(e.message), { kind: 'bad', ms: 7000 }); }
@@ -646,6 +660,7 @@ async function handlePair() {
 
 /* ---------------- Willkommen ---------------- */
 function welcome() {
+  if (L.willkommen()) return;
   if (S.local.onboarded || S.tasks().length || S.events().length || S.inboxItems().length) return;
   sheet({
     title: 'Willkommen in deiner Lebenszentrale', cls: 'sheet-sm',
@@ -675,13 +690,36 @@ function bindFab() {
 }
 
 /* ---------------- Start ---------------- */
+/** #/entwurf/<id> im Hauptfenster: diesen Entwurf hier weiterbearbeiten */
+function entwurfAusAdresse() {
+  const m = (location.hash || '').match(/^#\/entwurf\/(e-[a-z0-9]{6,32})/);
+  if (!m) return false;
+  history.replaceState(null, '', location.pathname + '#/' + (S.local.startPage || 'heute'));
+  A.newTask({ entwurf: m[1] });
+  return true;
+}
+
 async function boot() {
   A.applyTheme();
+  // Nebenfenster (fenster.html): nur der Vorgang oder Entwurf, ohne Navigation.
+  if (KR.fenster) {
+    await S.init();
+    SY.start();
+    if (SY.configured()) SY.syncNow({ force: true });
+    S.subscribe(info => { if (info.local) SY.schedulePush(); O.schedule(); });
+    window.addEventListener('pagehide', () => { S.saveNow(); S.saveLocalNow(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.querySelector('.popover')) { closePopover(); return; } const s = topSheet(); if (s) s.close('esc'); } });
+    await L.fensterStart(openVorgang);
+    return;
+  }
   document.getElementById('app').innerHTML = shellHtml();
   initTooltips();
   registerActions();
   await S.init();
   seedTemplates();
+  E.aufraeumen();
+  Dock.starten();
+  E.vomKern().then(n => { if (n) Dock.zeichnen(); });
   const params = Object.fromEntries(new URLSearchParams(location.search));
   if (params.open || params.r) history.replaceState(null, '', location.pathname + (location.hash && !location.hash.startsWith('#pair') ? location.hash : '#/' + (S.local.startPage || 'heute')));
   render();
@@ -722,7 +760,7 @@ async function boot() {
   });
   O.setAppUrl(() => N.appUrl());
 
-  window.addEventListener('hashchange', () => { closePopover(); closeAllSheets(); render(); window.scrollTo(0, 0); });
+  window.addEventListener('hashchange', () => { if (entwurfAusAdresse()) return; closePopover(); closeAllSheets(); render(); window.scrollTo(0, 0); });
   let wasMobile = isMobile();
   window.addEventListener('resize', () => { placeThumb(document.getElementById('areaSeg')); const m = isMobile(); if (m !== wasMobile) { wasMobile = m; scheduleRender(); } });
   if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (A.applyTheme()) render(); });
@@ -796,7 +834,9 @@ async function boot() {
     K.handleKey(e, parseRoute().name);
   });
 
-  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !A.preview) {
+  // Testinstanzen ohne Service Worker: sonst zeigt der Cache nach Änderungen alte Dateien.
+  const testInstanz = KR.test || (location.hostname === 'localhost' && !!location.port);
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !A.preview && !testInstanz) {
     try {
       const hadController = !!navigator.serviceWorker.controller;
       const reg = await navigator.serviceWorker.register('sw.js');
@@ -809,7 +849,8 @@ async function boot() {
 
   SY.start();
   if (SY.configured()) SY.syncNow({ force: true });
-  N.start();
+  // Nach dem Umzug plant die alte Adresse keine Erinnerungen mehr (das macht jetzt Zeitblick am Laptop).
+  if (!U.umgezogen()) N.start();
   await O.init();
   S.dailySnapshot();
 
@@ -831,6 +872,8 @@ async function boot() {
 
   if (params.open) handleOpen(params);
   await handlePair();
+  entwurfAusAdresse();
+  L.starten();
   setTimeout(() => { welcome(); N.checkAlarm(true); }, 900);
 }
 

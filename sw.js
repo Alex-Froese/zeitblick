@@ -1,7 +1,8 @@
 // Zeitblick – Service Worker: Offline-Betrieb und Klicks auf Benachrichtigungen
-const VERSION = 'zb-v3.0.0';
+const VERSION = 'zb-v4.0.0';
 const SHELL = [
-  './', './index.html', './manifest.webmanifest', './css/app.css', './vendor/qrcode.js',
+  './', './index.html', './fenster.html', './manifest.webmanifest', './css/app.css', './vendor/qrcode.js',
+  './js/kern.js', './js/krypto.js', './js/entwuerfe.js', './js/dock.js', './js/umzug.js', './js/laptop.js', './js/views/settings4.js',
   './js/app.js', './js/app-api.js', './js/core.js', './js/store.js', './js/sync.js', './js/ntfy.js', './js/notify.js',
   './js/obsidian.js', './js/audio.js', './js/ui.js', './js/charts.js', './js/editors.js', './js/entities.js', './js/detail.js', './js/recur-ui.js',
   './js/focus-engine.js', './js/demo.js', './js/actions.js', './js/bell.js', './js/player.js', './js/links.js', './js/journal.js', './js/bauplan.js',
@@ -26,7 +27,8 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  // APIs (GitHub, ntfy) nie zwischenspeichern
+  // APIs (GitHub, ntfy, Zeitblick-Kern, Test-Gist) nie zwischenspeichern
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/testgist/')) return;
   if (url.hostname.endsWith('github.com') || url.hostname.endsWith('githubusercontent.com') || url.hostname.includes('ntfy')) return;
   const isFont = false;
   const sameOrigin = url.origin === self.location.origin;
@@ -35,8 +37,11 @@ self.addEventListener('fetch', e => {
     // App-Seite: Cache zuerst (schnell und offline), im Hintergrund aktualisieren
     e.respondWith((async () => {
       const cache = await caches.open(VERSION);
-      const cached = await cache.match('./index.html');
-      const net = fetch(req).then(r => { if (r.ok) cache.put('./index.html', r.clone()); return r; }).catch(() => null);
+      // Nebenfenster (fenster.html) und Testseite haben ihre eigene Seite, alles andere ist die App-Seite.
+      const seite = url.pathname.endsWith('/fenster.html') ? './fenster.html' : url.pathname.endsWith('/test.html') ? null : './index.html';
+      if (!seite) return fetch(req);
+      const cached = await cache.match(seite);
+      const net = fetch(req).then(r => { if (r.ok) cache.put(seite, r.clone()); return r; }).catch(() => null);
       return cached || (await net) || new Response('Offline', { status: 503 });
     })());
     return;

@@ -6,6 +6,7 @@ import { heatmap } from '../charts.js';
 import { A } from '../app-api.js';
 import { emptyState, catSelect, lifeSelect, pct, catColor } from './common.js';
 import { handleNewOption } from '../entities.js';
+import { einstFeld, einstLesen, einstBinden } from './settings4.js';
 
 let weekOff = 0;
 let showArchived = false;
@@ -119,7 +120,7 @@ export function editHabit(h0) {
       <div class="qpick" data-kinds>${kindBtns}</div>
       <div data-kbox="target" class="${h.kind === 'count' || h.kind === 'limit' ? '' : 'hide'}" style="margin-top:12px"><div class="fgrid"><div class="field"><label data-tlabel>${h.kind === 'limit' ? 'Höchstens' : 'Mindestens'}</label><input class="input" type="number" min="0" data-f="target" value="${esc(String(h.target ?? ''))}"></div><div class="field"><label>Einheit</label><input class="input" data-f="unit" value="${esc(h.unit || '')}" placeholder="${h.kind === 'limit' ? 'Min' : 'Gläser'}" list="zb-units"><datalist id="zb-units"><option value="Min"><option value="Std"><option value="Gläser"><option value="Seiten"><option value="Schritte"><option value="Mal"></datalist></div></div></div>
       <div data-kbox="steps" class="${h.kind === 'routine' ? '' : 'hide'}" style="margin-top:12px"><div class="row"><div class="lbl grow" style="margin-bottom:4px">Schritte der Routine</div><span class="tiny muted" data-ttot>${totalMin() ? 'gesamt ' + C.fmtDuration(totalMin()) : ''}</span></div><div class="subs" data-steps>${stepsHtml()}</div><div class="sub"><span class="faint small" style="width:16px">+</span><input type="text" data-stepadd placeholder="Schritt hinzufügen, Enter drücken"></div>
-        <div class="row" style="margin-top:10px;gap:8px"><span class="lbl">Farbe im Player</span><div class="color-pick sm" data-rcolor>${['#1b4f72', '#33b679', '#039be5', '#8e24aa', '#e67c73', '#f4511e', '#f6bf26', '#616161'].map(c => `<button type="button" style="background:${c}" class="${(h.color || '#1b4f72') === c ? 'on' : ''}" data-rc="${c}" aria-label="${c}"></button>`).join('')}</div></div></div>
+        <div class="row" style="margin-top:10px;gap:8px"><span class="lbl">Farbe im Player</span><div class="color-pick sm" data-rcolor>${['#1b4f72', '#33b679', '#039be5', '#8e24aa', '#e67c73', '#f4511e', '#f6bf26', '#616161'].map(c => `<button type="button" style="background:${c}" class="${(h.color || '#1b4f72') === c ? 'on' : ''}" data-rc="${c}" aria-label="${c}"></button>`).join('')}</div></div>${einstFeld(h, "routinen.ton", "Ton im Player", "Gong und Hinweistöne dieser Routine")}</div>
       <div class="section-t">Wie oft</div>
       <div class="chips" data-freq>${[['daily', 'Täglich'], ['days', 'An bestimmten Tagen'], ['week', 'x-mal pro Woche']].map(([k, l]) => `<button type="button" class="chip ${f.type === k ? 'on' : ''}" data-ft="${k}">${l}</button>`).join('')}</div>
       <div class="wd-pick ${f.type === 'days' ? '' : 'hide'}" data-wd style="margin-top:10px">${C.WD_SHORT.map((w, i) => `<button type="button" class="${days.has(i) ? 'on' : ''}" data-wdi="${i}">${w}</button>`).join('')}</div>
@@ -136,6 +137,7 @@ export function editHabit(h0) {
       <div class="field" style="margin-top:10px"><label>Warum ist dir das wichtig?</label><textarea class="textarea" data-f="note" rows="2" placeholder="Erinnert dich an den Sinn dahinter">${esc(h.note || '')}</textarea></div>`,
     footer: `${existing ? `<div class="left"><button class="btn btn-ghost" data-del>${icon('trash', 14)}Löschen</button><button class="btn btn-ghost" data-arch>${existing.archived ? 'Reaktivieren' : 'Archivieren'}</button></div>` : ''}<button class="btn" data-close>Abbrechen</button><button class="btn btn-primary" data-save>${existing ? 'Speichern' : 'Anlegen'}</button>`,
     onMount: (el, close) => {
+      einstBinden(el);
       const v = n => el.querySelector(`[data-f="${n}"]`);
       let kind = h.kind || 'check', ftype = f.type || 'daily';
       el.addEventListener('click', async e => {
@@ -196,6 +198,7 @@ export function editHabit(h0) {
           target: kind === 'count' || kind === 'limit' ? Number(v('target').value) : null, unit: v('unit').value.trim(),
           steps: kind === 'routine' ? steps.filter(x => x.t.trim()) : (existing ? existing.steps || [] : []), color: h.color || null, runs: (existing && existing.runs) || [],
           time: v('time').value || '', area: v('area').value, cat, life, start: v('start').value || null, note: v('note').value.trim(), log: (existing && existing.log) || {},
+          einst: einstLesen(el, existing && existing.einst),
         };
         if (!existing) rec.order = S.habits().length;
         S.put('habits', rec);
@@ -215,7 +218,7 @@ function rowHtml(h, dayKeys, now) {
   const sub = [C.HABIT_KINDS[h.kind || 'check'].name, C.describeHabitFreq(h), h.kind === 'count' || h.kind === 'limit' ? `${h.kind === 'limit' ? '≤' : '≥'} ${h.target} ${h.unit || ''}`.trim() : '', h.kind === 'routine' ? `${(h.steps || []).length} Schritte` : '', h.time ? h.time + ' Uhr' : '', week].filter(Boolean).join(' · ');
   const c = S.cat(h.cat);
   return `<tr>
-    <td class="hname" data-edith="${h.id}">${c ? `<i class="catdot" style="background:${catColor(c)};margin-right:6px;vertical-align:1px"></i>` : ''}<b style="display:inline">${esc(h.title)}</b>${h.kind === 'routine' && !h.archived ? ` <button class="btn-go sm" data-rstart="${h.id}" title="Routine starten">${icon('play', 10)}</button>` : ''}<span style="display:block">${esc(sub)}</span></td>
+    <td class="hname" data-edith="${h.id}">${c ? `<i class="catdot" style="background:${catColor(c)};margin-right:6px;vertical-align:1px"></i>` : ''}<b style="display:inline">${esc(h.title)}</b>${C.istBeispiel(h) ? ` <span class="pill bsp">Beispiel</span>` : ""}${h.kind === 'routine' && !h.archived ? ` <button class="btn-go sm" data-rstart="${h.id}" title="Routine starten">${icon('play', 10)}</button>` : ''}<span style="display:block">${esc(sub)}</span></td>
     ${dayKeys.map(k => { const st = habitCellState(h, k); return `<td><button class="hcell ${st.cls}" data-habit="${h.id}" data-day="${k}" ${st.disabled ? 'disabled' : ''} aria-label="${esc(h.title)}, ${esc(C.fmtDateShort(C.parseYmd(k)))}">${st.label}</button></td>`; }).join('')}
     <td class="hstat"><span class="streak" title="Serie">${streak ? `${streak}${f.type === 'week' ? ' Wo.' : ''} ${icon('bolt', 11, 'inl')}` : '–'}</span></td>
     <td class="hstat hide-s" title="Quote der letzten 30 Tage">${pct(rate)}</td>

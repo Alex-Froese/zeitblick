@@ -1,8 +1,8 @@
 // Zeitblick – Kernlogik (läuft im Browser und in Node für die GitHub Action)
 // Keine DOM-Abhängigkeiten in dieser Datei.
 
-export const APP_VERSION = '3.0.0';
-export const DATA_VERSION = 3;
+export const APP_VERSION = '4.0.0';
+export const DATA_VERSION = 4;
 export const COLLECTIONS = ['tasks', 'events', 'cats', 'focus', 'meta', 'inbox', 'notes', 'habits', 'goals', 'projects', 'people', 'life', 'reviews', 'templates'];
 
 /* ------------------------------------------------------------------ */
@@ -174,6 +174,8 @@ export const DEFAULT_SETTINGS = {
     quiet: [{ id: 'q1', name: 'Nacht', from: '22:30', to: '04:45', days: [0, 1, 2, 3, 4, 5, 6], on: true }],
   },
   review: { dayOn: true, dayTime: '21:00', weekOn: true, weekDay: 6, weekTime: '18:00', monthOn: true, monthTime: '18:00' },
+  // Zeitblick 4: Standards, die jede Routine (später auch Gewohnheit, Box, Kategorie) mit einem eigenen Wert überschreiben kann
+  routinen: { ton: true, wachHalten: true },
 };
 
 export function mergeDeep(base, over) {
@@ -1231,6 +1233,76 @@ export function migrations(data) {
     if (!c || c.deleted) continue;
     if (c.dev === 'seed' && V1_SEED_IDS.has(c.id) && !used.has(c.id)) out.push({ col: 'cats', rec: { id: c.id, deleted: true }, remove: true });
   }
+  out.push(...migrationsV4(data));
+  return out;
+}
+
+/* ================================================================== */
+/* Zeitblick 4 – Fundament: Säulen, Beispieldaten, Einstellungen je Element */
+/* ================================================================== */
+
+/** Die 8 Säulen aus der Lebensarchitektur (_system-wissen/09-lebensarchitektur.md), gemeinsame IDs für alle Systeme. */
+export const SAEULEN = [
+  { key: 'unternehmen', name: 'Unternehmen', icon: '🏢', farbe: '#1b4f72', frage: 'Wächst Froese planbar?', worte: ['unternehmen', 'firma', 'business', 'froese', 'geschäft', 'geschaeft'] },
+  { key: 'beruf', name: 'Beruf & Karriere', icon: '🎓', farbe: '#3f51b5', frage: 'Komme ich gut durch die Ausbildung, und wohin danach?', worte: ['beruf', 'karriere', 'ausbildung', 'prodinger', 'schule'] },
+  { key: 'finanzen', name: 'Finanzen', icon: '💶', farbe: '#7986cb', frage: 'Habe ich Überblick, Puffer und einen Plan?', worte: ['finanz', 'geld'] },
+  { key: 'gesundheit', name: 'Gesundheit & Körper', icon: '🫀', farbe: '#33b679', frage: 'Habe ich die Energie für das, was ich vorhabe?', worte: ['gesundheit', 'körper', 'koerper', 'sport', 'fitness', 'ernährung'] },
+  { key: 'beziehungen', name: 'Beziehungen', icon: '❤️', farbe: '#e67c73', frage: 'Pflege ich die Menschen, die mir wichtig sind?', worte: ['beziehung', 'partner', 'familie', 'freunde', 'sozial'] },
+  { key: 'wissen', name: 'Wissen & Entwicklung', icon: '📚', farbe: '#8e24aa', frage: 'Werde ich jedes Quartal klüger und besser?', worte: ['wissen', 'entwicklung', 'lernen'] },
+  { key: 'zuhause', name: 'Zuhause & Alltag', icon: '🏠', farbe: '#f4511e', frage: 'Läuft mein Alltag ohne Reibung?', worte: ['zuhause', 'alltag', 'wohnen', 'haushalt'] },
+  { key: 'freizeit', name: 'Freizeit & Erleben', icon: '🌤️', farbe: '#14a38b', frage: 'Habe ich Spaß und erhole ich mich wirklich?', worte: ['freizeit', 'erleben', 'erholung', 'hobby', 'urlaub'] },
+];
+export const saeuleId = key => `l_${key}`;
+export function saeuleVon(key) { return SAEULEN.find(s => s.key === key) || null; }
+
+/** Ein Datensatz, den Zeitblick als Beispiel vorbelegt hat (Abzeichen „Beispiel“, Einstellungen → Beispieldaten). */
+export function istBeispiel(x) { return !!(x && !x.deleted && x.beispiel === true); }
+/** Sammlungen, in denen Beispieldaten vorkommen können (für die Übersicht in den Einstellungen). */
+export const BEISPIEL_SAMMLUNGEN = ['tasks', 'events', 'focus', 'cats', 'life', 'goals', 'projects', 'people', 'habits', 'notes', 'inbox', 'reviews', 'templates'];
+
+export function getPath(o, pfad) { return String(pfad).split('.').reduce((x, k) => (x == null ? undefined : x[k]), o); }
+
+/** Einstellung mit Vorrang: eigener Wert am Element (el.einst[pfad]), sonst der globale Wert, sonst der Standard.
+ *  So gibt es jede Einstellung global und je Routine, Gewohnheit, Box oder Kategorie („wie global“ oder eigener Wert). */
+export function einst(data, el, pfad) {
+  const e = el && el.einst;
+  if (e && Object.prototype.hasOwnProperty.call(e, pfad) && e[pfad] !== null) return e[pfad];
+  return getPath(settingsOf(data), pfad);
+}
+
+/** Lebensbereiche werden die 8 Säulen, ohne Verlust: Ein vorhandener Bereich mit passendem Namen wird zur Säule (Name,
+ *  Bewertungen und Verknüpfungen bleiben), fehlende Säulen kommen dazu, weitere eigene Bereiche bleiben dahinter stehen.
+ *  Beispieldaten aus Version 3 (Demo, Beispiel-Vorlagen) bekommen das Abzeichen „Beispiel“. Idempotent. */
+export function migrationsV4(data) {
+  const out = [];
+  const life = Object.values(data.life || {}).filter(x => x && !x.deleted);
+  const norm = s => String(s || '').toLowerCase();
+  const vergeben = new Set(life.filter(l => l.saeule).map(l => l.saeule));
+  const belegt = new Set(life.filter(l => l.saeule).map(l => l.id));
+  const unberuehrt = l => l && l.auto && !(l.ratings && l.ratings.length) && !(l.links && l.links.length);
+  SAEULEN.forEach((s, i) => {
+    const sid = saeuleId(s.key);
+    const auto = data.life && data.life[sid];
+    // Passt ein eigener Bereich besser (z. B. nach dem Umzug der alten Daten), wird er die Säule; die leere Vorbelegung geht.
+    const eigener = life.find(l => !belegt.has(l.id) && l.id !== sid && (norm(l.name) === norm(s.name) || s.worte.some(w => norm(l.name).includes(w))));
+    if (eigener && (!vergeben.has(s.key) || (auto && !auto.deleted && auto.saeule === s.key && unberuehrt(auto)))) {
+      out.push({ col: 'life', rec: { ...eigener, saeule: s.key, order: i, desc: eigener.desc || s.frage } });
+      belegt.add(eigener.id);
+      if (auto && !auto.deleted && unberuehrt(auto)) out.push({ col: 'life', rec: { id: sid, deleted: true }, remove: true });
+      vergeben.add(s.key);
+      return;
+    }
+    if (vergeben.has(s.key) || auto) return;   // schon da, oder bewusst gelöscht (Löschmarker)
+    out.push({ col: 'life', rec: { id: sid, name: s.name, icon: s.icon, desc: s.frage, order: i, ratings: [], saeule: s.key, auto: true } });
+    vergeben.add(s.key);
+  });
+  // eigene Bereiche ohne Säule hinter die Säulen
+  for (const l of life) if (!belegt.has(l.id) && !l.saeule && (l.order ?? 0) < SAEULEN.length && !out.some(m => m.rec.id === l.id)) out.push({ col: 'life', rec: { ...l, order: SAEULEN.length + (l.order ?? 0) } });
+  for (const c of BEISPIEL_SAMMLUNGEN) for (const x of Object.values(data[c] || {})) {
+    if (!x || x.deleted || x.beispiel !== undefined) continue;
+    if (x.demo || (c === 'templates' && x.example)) out.push({ col: c, rec: { ...x, beispiel: true } });
+  }
+  if (!data.meta || !data.meta.schema || (data.meta.schema.v || 0) < 4) out.push({ col: 'meta', rec: { id: 'schema', v: 4, migriertAm: Date.now() } });
   return out;
 }
 

@@ -1,7 +1,9 @@
 // Vorgang: Detailansicht (alle Infos, Status, Verlauf mit datierten Notizen) und Anlegen
 import * as C from './core.js';
 import * as S from './store.js';
-import { esc, icon, sheet, toast, isMobile, promptDialog } from './ui.js';
+import { esc, icon, sheet, toast, isMobile, promptDialog, confirmDialog, debounce } from './ui.js';
+import * as E from './entwuerfe.js';
+import * as KR from './kern.js';
 import { A } from './app-api.js';
 import { catSelect, projectSelect, goalSelect, fmtDateTime, ampDot } from './views/common.js';
 import { recHtml, recBind, recRead } from './recur-ui.js';
@@ -45,16 +47,28 @@ function subsHtml(t) {
   return (t.subs || []).map((x, i) => `<div class="sub ${x.d ? 'done' : ''}"><button type="button" class="check sq ${x.d ? 'on' : ''}" data-subt="${i}" aria-label="Abhaken">${icon('check', 11)}</button><input type="text" value="${esc(x.t)}" data-subed="${i}" aria-label="Unteraufgabe"><button type="button" class="icon-btn sm" data-subdel="${i}" aria-label="Entfernen">${icon('x', 13)}</button></div>`).join('');
 }
 
+// Felder eines neuen Vorgangs, die im Entwurf mitgesichert werden (Titel und Beschreibung stehen eigens im Entwurf).
+const ENTWURF_FELDER = ['type', 'status', 'area', 'cat', 'prio', 'imp', 'urg', 'autoUrg', 'esc', 'due', 'dueTime', 'start', 'dur', 'rem', 'rec', 'subs', 'people', 'project', 'goal', 'delegate', 'multi', 'fromNote', 'fromQuote', 'fromInbox'];
+
 export function openVorgang(id, preset = {}) {
   const existing = id ? S.task(id) : null;
   if (id && !existing) { toast('Diesen Vorgang gibt es nicht mehr'); return null; }
+  // Fenster-Regel: Ein neuer Vorgang ist ein Entwurf – jede Eingabe ist sofort gesichert, nichts geht verloren.
+  const entwurfId = existing ? null : (preset.entwurf || E.neueId());
+  const ent = entwurfId ? E.holen(entwurfId) : null;
+  if (ent && ent.zustand === 'gespeichert' && ent.ziel && S.task(ent.ziel)) return openVorgang(ent.ziel);
+  let extra = {};
+  try { extra = ent && ent.extra ? JSON.parse(ent.extra) : {}; } catch { extra = {}; }
   const s = S.settings();
   const now = A.now();
   const area0 = preset.area || (A.area() === 'all' ? 'p' : A.area());
   let t = existing ? C.structuredCloneSafe(existing) : {
     title: '', notes: '', type: 'aufgabe', status: 'neu', area: area0, cat: null, prio: 3, imp: false, urg: false, autoUrg: true, esc: true,
-    due: null, dueTime: null, start: null, dur: null, rem: null, rec: null, subs: [], log: [], people: [], project: null, goal: null, delegate: '', ...preset,
+    due: null, dueTime: null, start: null, dur: null, rem: null, rec: null, subs: [], log: [], people: [], project: null, goal: null, delegate: '', ...preset, ...extra,
   };
+  if (ent) { t.title = ent.titel || t.title || ''; t.notes = ent.text || t.notes || ''; }
+  delete t.entwurf;
+  let verworfen = false, abgegeben = false;
   const closed = existing && C.isClosed(existing);
   const q0 = C.quadrant(t, now, s);
   const lvl = existing ? C.ampel(existing, now, s).level : 'none';
@@ -116,15 +130,48 @@ export function openVorgang(id, preset = {}) {
     ? `<div class="left"><button class="btn btn-ghost" data-act="del" title="Löschen">${icon('trash', 15)}<span class="${isMobile() ? 'hide' : ''}">Löschen</span></button>
         ${!closed ? `<button class="btn btn-ghost" data-act="plan">${icon('calendar', 15)}<span class="${isMobile() ? 'hide' : ''}">Einplanen</span></button><button class="btn btn-ghost" data-act="focus">${icon('play', 13)}Fokus</button>` : ''}</div>
        ${closed ? `<button class="btn" data-act="reopen">Wieder öffnen</button>` : `<button class="btn btn-primary" data-act="done">${icon('check', 15)}Erledigen</button>`}`
-    : `<button class="btn" data-act="cancel">Abbrechen</button><button class="btn btn-primary" data-act="create">Anlegen</button>`;
+    : `<span class="entwurf-hinweis tiny muted" data-entstand>${ent && !E.leer(ent) ? 'Entwurf gesichert' : 'Wird bei jeder Eingabe gesichert'}</span><button class="btn" data-act="cancel" title="Entwurf verwerfen (30 Tage zurückholbar)">Verwerfen</button><button class="btn btn-primary" data-act="create">Anlegen</button>`;
+  // ↗ eigenes Fenster (nicht im Nebenfenster selbst)
+  const kopf = KR.fenster ? '' : `<button class="icon-btn sheet-win" data-act="eigenfenster" title="In eigenem Fenster öffnen" aria-label="In eigenem Fenster öffnen">${icon('open', 17)}</button>`;
 
   let created = null;
   const sh = sheet({
-    title: existing ? `Vorgang #${String(existing.no || 0).padStart(4, '0')} · ${C.TYPES[C.typeOf(t)].name}` : 'Neuer Vorgang', body, footer, side: !isMobile(), cls: 'vorgang',
+    title: existing ? `Vorgang #${String(existing.no || 0).padStart(4, '0')} · ${C.TYPES[C.typeOf(t)].name}` : (ent && !E.leer(ent) ? 'Entwurf: Neuer Vorgang' : 'Neuer Vorgang'), body, footer, kopf, side: !isMobile() && !KR.fenster, cls: 'vorgang' + (KR.fenster ? ' sheet-fenster' : ''),
     onMount: (el, close) => {
       recBind(el);
       if (existing) el.dataset.task = existing.id;
       const v = f => el.querySelector(`[data-f="${f}"]`);
+      // ---------- Entwurf: jede Eingabe sofort sichern ----------
+      const entwurfSichern = () => {
+        if (!entwurfId || created || verworfen || abgegeben) return;
+        const titel = v('title').value, text = v('notes').value;
+        t.delegate = v('delegate').value;
+        const ex = {};
+        for (const k of ENTWURF_FELDER) if (t[k] !== undefined && t[k] !== null && !(Array.isArray(t[k]) && !t[k].length)) ex[k] = t[k];
+        const e = E.setzen({ id: entwurfId, titel, text, extra: JSON.stringify(ex) });
+        const st = el.querySelector('[data-entstand]');
+        if (st && !E.leer(e)) st.textContent = 'Entwurf gesichert ' + new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+      };
+      if (entwurfId) {
+        E.nehmen(entwurfId);
+        el.addEventListener('input', entwurfSichern);
+        el.addEventListener('change', () => setTimeout(entwurfSichern));
+        el.addEventListener('click', () => setTimeout(entwurfSichern));
+        const weg = E.beobachten((art, id) => {
+          if (id !== entwurfId) return;
+          // Ein anderes Fenster hat den Entwurf übernommen oder angelegt: hier abgeben, der Stand ist gesichert.
+          if (art === 'nimmt' || art === 'gespeichert') { abgegeben = true; weg(); close('abgegeben'); if (art === 'nimmt' && !KR.fenster) toast('Der Entwurf ist jetzt in einem anderen Fenster', { ms: 2600 }); }
+        });
+        el._entwurfWeg = weg;
+      } else {
+        // Bestehender Vorgang: Titel und Beschreibung beim Tippen speichern, nicht erst beim Schließen.
+        const sofort = debounce(x => {
+          const cur = S.task(existing.id); if (!cur) return;
+          if (x.dataset.f === 'title' && x.value.trim() && x.value.trim() !== cur.title) S.put('tasks', { ...cur, title: x.value.trim() }, { noRender: true });
+          if (x.dataset.f === 'notes' && x.value !== (cur.notes || '')) S.put('tasks', { ...cur, notes: x.value }, { noRender: true });
+        }, 600);
+        el.addEventListener('input', e => { if (e.target.dataset && (e.target.dataset.f === 'title' || e.target.dataset.f === 'notes')) sofort(e.target); });
+      }
       const readMulti = () => {
         const box = el.querySelector('[data-multi]');
         const on = v('multiOn').checked;
@@ -235,8 +282,20 @@ export function openVorgang(id, preset = {}) {
           toast('Notiz mit Datum gespeichert');
           return;
         }
-        if (a === 'cancel') { close(); return; }
-        if (a === 'create') { if (create()) close(); return; }
+        if (a === 'cancel') {
+          const e0 = E.holen(entwurfId);
+          if (e0 && !E.leer({ titel: v('title').value, text: v('notes').value })) {
+            const ok = await confirmDialog('Diesen Entwurf verwerfen? Unter Einstellungen → Entwürfe kannst du ihn 30 Tage lang zurückholen.', { ok: 'Verwerfen', title: 'Entwurf verwerfen?', cooldown: 3 });
+            if (!ok) return;
+          }
+          verworfen = true; E.verwerfen(entwurfId); close('verworfen'); return;
+        }
+        if (a === 'create') { if (create()) close('angelegt'); return; }
+        if (a === 'eigenfenster') {
+          if (entwurfId) { entwurfSichern(); abgegeben = true; close('fenster'); KR.fensterOeffnen('entwurf', entwurfId).catch(err => toast(esc(err.message), { kind: 'bad' })); }
+          else { close('fenster'); KR.fensterOeffnen('vorgang', existing.id).catch(err => toast(esc(err.message), { kind: 'bad' })); }
+          return;
+        }
         if (a === 'done') { if (await A.completeTask(existing.id)) close(); return; }
         if (a === 'reopen') { const cur = S.task(existing.id); S.put('tasks', C.setStatus(cur, 'neu', new Date())); toast('Wieder geöffnet'); close(); return; }
         if (a === 'del') { if (await A.deleteTask(existing.id)) close(); return; }
@@ -263,17 +322,33 @@ export function openVorgang(id, preset = {}) {
         if (!t.rem && !v('remDefault').checked) t.rem = [...el.querySelectorAll('[data-rem].on')].map(x => Number(x.dataset.rem));
         t.no = S.nextTicketNo();
         t.log = [];
-        if (preset.fromInbox) { t.log = [C.logEntry(`Aus der Inbox einsortiert (erfasst ${fmtDateTime(preset.fromInbox.createdAt)})`, 'system')]; delete t.fromInbox; }
+        const ausInbox = preset.fromInbox || t.fromInbox;
+        if (ausInbox) { t.log = [C.logEntry(`Aus der Inbox einsortiert (erfasst ${fmtDateTime(ausInbox.createdAt)})`, 'system')]; delete t.fromInbox; }
         const rec = S.put('tasks', { ...t, status: t.status || 'neu' });
         created = rec;
-        if (preset.fromInbox) S.remove('inbox', preset.fromInbox.id);
+        if (entwurfId) E.gespeichert(entwurfId, rec.id);
+        if (ausInbox && S.get('inbox', ausInbox.id)) S.remove('inbox', ausInbox.id);
         toast(`Vorgang #${String(rec.no).padStart(4, '0')} angelegt`);
         return true;
       }
     },
-    onClose: () => {
+    onClose: (grund) => {
+      if (!existing) {
+        const el = sh && sh.el;
+        if (el && el._entwurfWeg) el._entwurfWeg();
+        if (entwurfId) {
+          E.abgeben(entwurfId);
+          const e = E.holen(entwurfId);
+          if (!created && !verworfen && !abgegeben) {
+            if (!e || E.leer(e)) E.verwerfen(entwurfId);   // leer: einfach weg
+            else if (!KR.fenster) toast('Entwurf gesichert – unten rechts kannst du weitermachen', { ms: 3200 });
+          }
+        }
+        if (KR.fenster && grund !== 'abgegeben-still') A.fensterZu && A.fensterZu(grund);
+        return;
+      }
+      if (KR.fenster) setTimeout(() => A.fensterZu && A.fensterZu(grund), 50);
       // Titel/Beschreibung sichern, falls noch nicht per change übernommen
-      if (!existing) return;
       const el = sh && sh.el; if (!el) return;
       const cur = S.task(existing.id); if (!cur) return;
       const title = el.querySelector('[data-f="title"]').value.trim();

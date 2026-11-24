@@ -131,12 +131,19 @@ export async function init() {
   if (stored && typeof stored === 'object') {
     data = C.emptyData();
     for (const c of C.COLLECTIONS) data[c] = stored[c] || {};
+    // Rückweg: Vor dem ersten Start von Version 4 bleibt der alte Stand unverändert als eigene Sicherung im Gerät
+    // (Einstellungen → Datensicherung → „Stand vor Version 4“). Version 4 ändert nichts, sie ergänzt nur.
+    const vorher = data.meta.schema && !data.meta.schema.deleted ? data.meta.schema.v : 3;
+    if (vorher < 4 && !(await kvGet('vor-v4'))) await kvSet('vor-v4', { at: Date.now(), version: vorher, data: C.structuredCloneSafe(stored) });
   }
   ensureDefaults();
   runMigrations();
   saveLocal();
   return data;
 }
+
+/** Der Stand vor Version 4 (falls dieses Gerät schon Version 3 hatte). */
+export async function vorV4() { return kvGet('vor-v4'); }
 
 function ensureDefaults() {
   // Version 2: keine vorgegebenen Kategorien mehr – du legst sie selbst an (mit Vorschlägen)

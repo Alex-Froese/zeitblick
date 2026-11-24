@@ -102,6 +102,6 @@ export function openLinkPicker(anchor, { col, id, onPick, only } = {}) {
     draw();
     setTimeout(() => inp.focus(), 30);
   };
-  if (isMobile() || !anchor) sheet({ title: 'Verknüpfen', cls: 'sheet-sm', body: html, onMount: mountFn });
+  if (isMobile() || !anchor) sheet({ auswahl: true, title: 'Verknüpfen', cls: 'sheet-sm', body: html, onMount: mountFn });
   else popover(anchor, html, { width: 360, place: 'below', onMount: mountFn });
 }

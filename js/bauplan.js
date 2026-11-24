@@ -1,6 +1,21 @@
 // Bauplan und Versionsverlauf – im Programm (Einstellungen → Info), je Version aktualisiert
 export const VERSIONS = [
   {
+    v: '4.0.0', date: '2026-11-23', title: 'Zeitblick 4 · Teil 0: Fundament',
+    items: [
+      'Zeitblick-Kern am Laptop (Zeitblick.exe): lebt im Infobereich, startet mit Windows, eigenes Symbol in der Taskleiste, einzeln anheftbar',
+      'Die Daten wohnen am Laptop als Dateien in deinem Benutzerordner (nicht mehr nur im Browser), mit Sicherung etwa eine Minute nach jeder Änderung (die letzten 100)',
+      'Sync verschlüsselt (AES-256 + HMAC): neuer, privater Speicher, Schlüssel nur auf deinen Geräten, Wiederherstellungs-Schlüssel zum Aufschreiben, Handy per QR-Code. Der alte Speicher bleibt unverändert',
+      'Kundenblick gleicht direkt mit dem Kern ab statt über GitHub',
+      'Kürzel von überall: Strg+Alt+Z zeigt Zeitblick, Strg+Alt+A öffnet „Neuer Vorgang“ als kleines eigenes Fenster. Rechtsklick in der Taskleiste: „Neues Fenster“, „Neuer Vorgang“',
+      'Fenster-Regel: Fenster schließen nur über ✕ oder Esc, nie beim Klick daneben oder beim Programmwechsel. Neue Vorgänge sind ab dem ersten Buchstaben als Entwurf gesichert, warten als Karte unten rechts und lassen sich als eigenes Fenster öffnen',
+      'Rechtsklick auf einen Vorgang: „In neuem Fenster öffnen“',
+      'Statusdatei für Launcher und Weitblick (nur Zahlen) und Markdown-Spiegel in den Vault schreibt jetzt der Kern',
+      'Umzug von der alten Adresse mit einem Klick, die alte Ablage bleibt als Rückweg unverändert',
+      'Datenmodell 4: Lebensbereiche sind die 8 Säulen (eigene Bereiche bleiben erhalten), Beispieldaten mit Abzeichen und Übersicht zum Übernehmen oder Löschen, Einstellungen global und je Element (zuerst: Ton im Routine-Player)',
+    ],
+  },
+  {
     v: '3.0.0', date: '2026-10-29', title: 'Lebenszentrale mit Nervensystem',
     items: [
       'Heute ersetzt das Cockpit: Tagesring, Jetzt & Nächstes, Tagesplan, Routinen mit Start-Knopf, Gewohnheiten, Vorgänge, Einprägen, Von gestern offen, Rückblick – Blöcke frei anordnen',
@@ -30,6 +45,13 @@ export const VERSIONS = [
 ];
 
 export const PLAN = [
+  { name: 'Zeitblick 4 · Teil 0 Fundament', status: 'fertig', text: 'Kern am Laptop, verschlüsselter Sync mit Kundenblick, Fenster-Regel, Statusdatei, Datenmodell 4 mit Säulen, Beispieldaten, Einstellungen je Element' },
+  { name: 'Zeitblick 4 · Teil 1 Routinen-Welt', status: 'später', text: 'Bibliothek mit Bausteinen, Player mit drei Stimmungen, Klänge, Streaks, Kopfgeld und Steckbrief, Monatsrituale' },
+  { name: 'Zeitblick 4 · Teil 2 Gewohnheiten & Handbuch', status: 'später', text: 'Gut und schlecht, Mein Handbuch, Wissenskarten im Player' },
+  { name: 'Zeitblick 4 · Teil 3 Besitz & Bestand', status: 'später', text: 'Alles, was du besitzt, Wechsel, Inventur, Ausmisten, Einkaufsliste' },
+  { name: 'Zeitblick 4 · Teil 4 Tag & Timeboxen', status: 'später', text: 'Box-Ansicht, Fokus-Modus, Done-Liste, kein Berg' },
+  { name: 'Zeitblick 4 · Teil 5 Zeit & Fokus', status: 'später', text: 'Wächter am Laptop, Konten, Tageslimit, Absicht und Protokoll' },
+  { name: 'Zeitblick 4 · Teil 6 Vorgang & Notiz', status: 'später', text: 'Vorgang auch als Notiz, eine Fassung für Klarblick und Zeitblick' },
   { name: 'Fundament', status: 'fertig', text: 'Größe, Dichte, Navigation, Tastenkürzel-Zentrale, Befehlspalette, Countdown-Bestätigungen' },
   { name: 'Heute', status: 'fertig', text: 'Die eine verbindliche Tagesansicht, unabhängig von der Glocke' },
   { name: 'Kalender & Vorlagen', status: 'fertig', text: '7 Tage, 0–24 Uhr, Vollbild, Vorlagen, A/B-Wochen, Ferien, Themenblöcke, Verknüpfungen' },
@@ -43,5 +65,5 @@ export const PLAN = [
   { name: 'Launcher', status: 'später', text: 'Zeitblick als Teil eines eigenen Launchers' },
   { name: 'ERP Froese Fensterreinigung', status: 'später', text: 'Live-Schnittstelle für geschäftliche Vorgänge und Kalender; Kunden und Angebote bleiben im ERP' },
   { name: 'Mehrbenutzer', status: 'später', text: 'Geteilte Bereiche, z. B. mit Partnerin oder Aushilfe' },
-  { name: 'Eigener Server (NAS/PC)', status: 'später', text: 'App-Sperre, Verschlüsselung, große Dateien (Audio/Video)' },
+  { name: 'Eigener Server (NAS/PC)', status: 'später', text: 'Der Zeitblick-Kern zieht auf den NAS-PC und wird die Zentrale für alle Geräte; App-Sperre, große Dateien (Audio/Video)' },
 ];

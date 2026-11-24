@@ -68,7 +68,7 @@ export function taskLine(t, { showCat = true, now = A.now(), focus = true } = {}
   const closed = C.isClosed(t);
   return `<div class="li ${closed ? 'done' : ''}" data-task="${t.id}" tabindex="0">
     ${ampDot(closed ? 'done' : lvl)}
-    <div class="grow"><div class="lt">${esc(t.title)}</div>
+    <div class="grow"><div class="lt">${esc(t.title)}${C.istBeispiel(t) ? ` <span class="pill bsp">Beispiel</span>` : ""}</div>
       <div class="lm">${statusPillSmall(t)}${d && !closed ? `<span class="${d.cls}">${esc(d.txt)}</span>` : ''}${showCat && c ? `<span class="tag"><i class="catdot" style="background:${catColor(c)}"></i>${esc(c.name)}</span>` : ''}${t.rec && t.rec.f ? `<span>${icon('repeat', 12)}</span>` : ''}</div></div>
     ${focus && !closed ? `<button class="icon-btn sm" data-act="focus" data-id="${t.id}" aria-label="Fokus starten" title="Fokus starten">${icon('play', 13)}</button>` : ''}
   </div>`;

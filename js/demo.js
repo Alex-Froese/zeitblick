@@ -21,7 +21,7 @@ export function seedDemo(now = new Date()) {
   const day = n => C.ymd(C.addDays(now, n));
   const at = (n, t) => C.fmtLocal(C.setTime(C.addDays(C.startOfDay(now), n), t));
   const ago = (days, h = 10) => C.setTime(C.addDays(C.startOfDay(now), -days), `${h}:00`).getTime();
-  const put = (col, o) => S.put(col, { demo: true, ...o }, { silent: true });
+  const put = (col, o) => S.put(col, { demo: true, beispiel: true, ...o }, { silent: true });
 
   // Lebensbereiche
   const L = {};
@@ -161,13 +161,13 @@ function weekBlocks(kinds) {
 export function exampleTemplates() {
   const withIds = (list, p) => list.map((b, i) => ({ ...b, id: `${p}${i}`, d: 0 }));
   return [
-    { id: 'tpl-a', kind: 'week', name: 'A-Woche', note: 'Berufsschule Montag und Donnerstag', order: 0, example: true, blocks: weekBlocks(['schule', 'ausbildung', 'ausbildung', 'schule', 'ausbildung', 'sa', 'so']) },
-    { id: 'tpl-b', kind: 'week', name: 'B-Woche', note: 'Berufsschule nur Donnerstag', order: 1, example: true, blocks: weekBlocks(['ausbildung', 'ausbildung', 'ausbildung', 'schule', 'ausbildung', 'sa', 'so']) },
-    { id: 'tpl-f', kind: 'week', name: 'Ferienwoche', note: 'Schulferien: Ausbildung ohne Berufsschule', order: 2, example: true, blocks: weekBlocks(['ausbildung', 'ausbildung', 'ausbildung', 'ausbildung', 'ausbildung', 'sa', 'so']) },
-    { id: 'tpl-d-aus', kind: 'day', name: 'Ausbildungstag', note: 'Prodinger 06:40–16:15, danach Business', order: 3, example: true, blocks: withIds(DAY_TPL.ausbildung(), 'da') },
-    { id: 'tpl-d-sch', kind: 'day', name: 'Schultag', note: 'Berufsschule, danach Business', order: 4, example: true, blocks: withIds(DAY_TPL.schule(), 'ds') },
-    { id: 'tpl-d-frei', kind: 'day', name: 'Freier Tag', note: 'Urlaub oder Feiertag', order: 5, example: true, blocks: withIds(DAY_TPL.frei(), 'df') },
-    { id: 'tpl-d-we', kind: 'day', name: 'Wochenende', note: 'Samstag mit optionalem Business-Block', order: 6, example: true, blocks: withIds(DAY_TPL.wochenende(false), 'dw') },
+    { id: 'tpl-a', kind: 'week', name: 'A-Woche', note: 'Berufsschule Montag und Donnerstag', order: 0, example: true, beispiel: true, blocks: weekBlocks(['schule', 'ausbildung', 'ausbildung', 'schule', 'ausbildung', 'sa', 'so']) },
+    { id: 'tpl-b', kind: 'week', name: 'B-Woche', note: 'Berufsschule nur Donnerstag', order: 1, example: true, beispiel: true, blocks: weekBlocks(['ausbildung', 'ausbildung', 'ausbildung', 'schule', 'ausbildung', 'sa', 'so']) },
+    { id: 'tpl-f', kind: 'week', name: 'Ferienwoche', note: 'Schulferien: Ausbildung ohne Berufsschule', order: 2, example: true, beispiel: true, blocks: weekBlocks(['ausbildung', 'ausbildung', 'ausbildung', 'ausbildung', 'ausbildung', 'sa', 'so']) },
+    { id: 'tpl-d-aus', kind: 'day', name: 'Ausbildungstag', note: 'Prodinger 06:40–16:15, danach Business', order: 3, example: true, beispiel: true, blocks: withIds(DAY_TPL.ausbildung(), 'da') },
+    { id: 'tpl-d-sch', kind: 'day', name: 'Schultag', note: 'Berufsschule, danach Business', order: 4, example: true, beispiel: true, blocks: withIds(DAY_TPL.schule(), 'ds') },
+    { id: 'tpl-d-frei', kind: 'day', name: 'Freier Tag', note: 'Urlaub oder Feiertag', order: 5, example: true, beispiel: true, blocks: withIds(DAY_TPL.frei(), 'df') },
+    { id: 'tpl-d-we', kind: 'day', name: 'Wochenende', note: 'Samstag mit optionalem Business-Block', order: 6, example: true, beispiel: true, blocks: withIds(DAY_TPL.wochenende(false), 'dw') },
   ];
 }
 

@@ -11,6 +11,8 @@ import * as BP from '../bauplan.js';
 import { A } from '../app-api.js';
 import { catColor, areaName } from './common.js';
 import { editCategory as editCat, editLife } from '../entities.js';
+import * as S4 from './settings4.js';
+import * as KR from '../kern.js';
 
 const SECTIONS = [
   ['einrichtung', 'Einrichtung', 'bolt'],
@@ -25,6 +27,9 @@ const SECTIONS = [
   ['benachrichtigungen', 'Benachrichtigungen', 'bell'],
   ['rueckblicke', 'Rückblicke', 'book'],
   ['sync', 'Sync & Cloud', 'cloud'],
+  ...(KR.aktiv ? [['laptop', 'Laptop & Kern', 'laptop']] : []),
+  ['beispiele', 'Beispieldaten', 'layers'],
+  ['entwuerfe', 'Entwürfe', 'edit'],
   ['obsidian', 'Obsidian', 'gem'],
   ['backup', 'Datensicherung', 'shield'],
   ['fokus', 'Fokus', 'focus'],
@@ -157,6 +162,7 @@ function infoSection() {
     <p class="small">Version <b>${C.APP_VERSION}</b> · Datenstand ${C.DATA_VERSION} · Gerät <span class="code">${esc(S.local.deviceId)}</span></p>
     <div class="section-t">Bauplan</div>
     <div class="plan-list2">${BP.PLAN.map(p => `<div class="pl2 ${p.status === 'fertig' ? 'ok' : ''}"><span class="pill ${p.status === 'fertig' ? 'st-erledigt' : 'st-wartet'}">${p.status === 'fertig' ? '✓ fertig' : 'später'}</span><b>${esc(p.name)}</b><span class="small muted">${esc(p.text)}</span></div>`).join('')}</div>
+    ${S4.speicherorteHtml()}
     <div class="section-t">Versionsverlauf</div>
     ${BP.VERSIONS.map((v, i) => `<details class="ver" ${i === 0 ? 'open' : ''}><summary><b>${esc(v.v)}</b> · ${esc(v.title)} <span class="tiny muted">${esc(C.fmtDateShort(C.parseYmd(v.date)))} ${v.date.slice(0, 4)}</span></summary><ul>${v.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>`).join('')}
     <p class="small muted" style="margin-top:12px">Erklärungen und dein eigenes Regelwerk findest du in der <a href="#/anleitung">Anleitung</a>.</p>
@@ -268,22 +274,18 @@ export function render(route) {
         <div class="field" style="margin-top:6px"><label for="s-appurl">Adresse der App (für Deep Links)</label><input id="s-appurl" class="input" data-settext="appUrl" value="${esc(s.appUrl || '')}" placeholder="${esc(N.baseUrl())}"><span class="hint">Tippst du auf eine Benachrichtigung, öffnet sich diese Adresse direkt an der richtigen Stelle. Leer lassen = aktuelle Adresse (${esc(N.baseUrl())}).</span></div>
       </section>
 
-      <section class="card set-sec" id="set-sync"><div class="card-head"><h2>Sync & Cloud-Speicher</h2></div>
-        ${g ? `<div class="status-line ${st.status === 'error' ? 'err' : st.status === 'idle' ? 'ok' : ''}">${st.status === 'error' ? esc(st.error) : st.status === 'offline' ? 'Offline – Änderungen werden übertragen, sobald du wieder online bist.' : st.lastSync ? `✓ Synchronisiert ${esc(C.fmtRelTime(st.lastSync))} mit GitHub (${esc(g.login || '')})` : 'Verbinde …'}</div>
-          <div class="row wrap"><button class="btn btn-primary sm" data-act="syncnow">${icon('sync', 15)}Jetzt synchronisieren</button><button class="btn sm" data-act="pair">${icon('qr', 15)}Weiteres Gerät verbinden</button><a class="btn sm" href="https://gist.github.com/${esc(g.login || '')}/${esc(g.id)}" target="_blank" rel="noopener">${icon('open', 15)}Speicher ansehen</a><button class="btn sm btn-ghost" data-act="unsync" style="color:var(--bad)">Trennen</button></div>
-          <p class="small muted" style="margin-top:12px">Jede Änderung wird als neue Version gespeichert. Im Gist-Verlauf auf GitHub kannst du jeden früheren Stand wiederherstellen.</p>
-          <div class="optrow"><div class="grow"><b>Gist-ID</b><span>Brauchst du für die Server-Erinnerungen (Secret ZB_GIST_ID)</span></div><span class="code">${esc(g.id)}</span><button class="icon-btn sm" data-act="copygist" aria-label="Gist-ID kopieren">${icon('copy', 15)}</button></div>`
-    : `<p class="small muted">Zeitblick speichert alles zuerst lokal auf dem Gerät. Für den Abgleich zwischen Handy und Laptop nutzt es einen privaten „Gist“ in deinem kostenlosen GitHub-Account – mit Versionsverlauf als Cloud-Backup.</p>
-          <ol class="steps">
-            <li>Kostenlosen Account auf <a href="https://github.com/signup" target="_blank" rel="noopener">github.com</a> anlegen (falls noch keiner da ist).</li>
-            <li><a href="https://github.com/settings/tokens/new?scopes=gist&description=Zeitblick" target="_blank" rel="noopener">Token erstellen</a>: Haken bei „gist“ ist schon gesetzt, Ablauf „No expiration“ wählen, unten „Generate token“.</li>
-            <li>Token hier einfügen und verbinden. Auf dem zweiten Gerät denselben Token nutzen – oder einfach den QR-Code scannen.</li>
-          </ol>
-          <div class="row"><input class="input" data-token type="password" placeholder="ghp_… oder github_pat_…" autocomplete="off" aria-label="GitHub-Token"><button class="btn btn-primary" data-act="connect">Verbinden</button></div>
-          ${st.error ? `<div class="status-line err" style="margin-top:10px">${esc(st.error)}</div>` : ''}`}
-      </section>
+      ${S4.syncSection()}
+      ${S4.laptopSection()}
+      ${S4.beispielSection()}
+      ${S4.entwuerfeSection()}
 
-      <section class="card set-sec" id="set-obsidian"><div class="card-head"><h2>Obsidian</h2></div>
+      ${O.kern ? `<section class="card set-sec" id="set-obsidian"><div class="card-head"><h2>Obsidian</h2></div>
+        ${O.ostate.status === 'ok' ? `<div class="status-line ok">✓ Der Kern schreibt den Spiegel nach ${esc(O.ostate.folder || 'Vault')}${O.ostate.last ? `, zuletzt ${esc(C.fmtRelTime(O.ostate.last))}` : ''}</div>` : O.ostate.status === 'error' ? `<div class="status-line err">${esc(O.ostate.error)}</div>` : '<div class="status-line">Spiegel ist aus (Einstellungen → Laptop & Kern).</div>'}
+        <p class="small muted">Am Laptop schreibt der Zeitblick-Kern den reinen Inhalt als Markdown in den Vault (Ordner „Zeitblick“), ohne Ordner-Freigabe im Browser: Übersicht, eine Datei pro Vorgang, Notizen, Ziele, Projekte, Personen, Gewohnheiten, Kalender, Tage. Datensicherungen macht der Kern selbst, die komplette Datendatei kommt nicht mehr in den Vault.</p>
+        <div class="row wrap"><button class="btn sm" data-act="obsnow">Jetzt schreiben</button></div>
+        ${sw('local.obsidian.notes', S.local.obsidian.notes !== false, 'Eine Datei pro Vorgang', 'Mit YAML-Eigenschaften: ticket, typ, status, bereich, kategorie, prioritaet, quadrant, ampel, faellig, projekt …')}
+        ${sw('local.obsidian.daily', S.local.obsidian.daily !== false, 'Tagesnotizen', 'Für die letzten 14 und nächsten 7 Tage')}
+      </section>` : `<section class="card set-sec" id="set-obsidian"><div class="card-head"><h2>Obsidian</h2></div>
         ${!O.supported ? '<div class="status-line">Direktes Schreiben in Ordner geht nur am Laptop in Chrome oder Edge. Auf dem Handy landen die Daten über den Sync trotzdem überall.</div>'
     : O.ostate.status === 'ok' ? `<div class="status-line ok">✓ Schreibt in „${esc(O.ostate.folder)}/Zeitblick“${O.ostate.last ? `, zuletzt ${esc(C.fmtRelTime(O.ostate.last))}` : ''}</div>`
       : O.ostate.status === 'needs-permission' ? `<div class="status-line">Der Browser fragt nach einem Neustart erneut nach Zugriff auf „${esc(O.ostate.folder)}“. <button class="btn sm btn-primary" data-act="obsregrant" style="margin-left:auto">Zugriff erlauben</button></div>`
@@ -292,14 +294,15 @@ export function render(route) {
         ${O.supported ? `<div class="row wrap"><button class="btn btn-primary sm" data-act="obschoose">${icon('folder', 15)}${O.ostate.folder ? 'Anderen Ordner wählen' : 'Vault-Ordner wählen'}</button>${O.ostate.status === 'ok' ? `<button class="btn sm" data-act="obsnow">Jetzt schreiben</button><button class="btn sm btn-ghost" data-act="obsoff">Trennen</button>` : ''}</div>` : ''}
         ${sw('local.obsidian.notes', S.local.obsidian.notes !== false, 'Eine Datei pro Vorgang', 'Mit YAML-Eigenschaften: ticket, typ, status, bereich, kategorie, prioritaet, quadrant, ampel, faellig, projekt …')}
         ${sw('local.obsidian.daily', S.local.obsidian.daily !== false, 'Tagesnotizen', 'Für die letzten 14 und nächsten 7 Tage')}
-      </section>
+      </section>`}
 
       <section class="card set-sec" id="set-backup"><div class="card-head"><h2>Datensicherung</h2></div>
-        <p class="small muted">Automatisch: jeden Tag ein Schnappschuss hier auf dem Gerät (21 Tage), mit Sync zusätzlich jede Änderung als Version in der Cloud, mit Obsidian täglich eine Sicherungsdatei im Vault.</p>
+        <p class="small muted">${KR.aktiv ? 'Automatisch: Der Kern sichert etwa eine Minute nach jeder Änderung, beim Beenden und vor jedem Umzug als ZIP (die letzten 100, Speicherorte unter Info). Dazu jeden Tag ein Schnappschuss hier im Gerät (21 Tage) und mit Sync jede Änderung verschlüsselt als Version in der Cloud.' : 'Automatisch: jeden Tag ein Schnappschuss hier auf dem Gerät (21 Tage), mit Sync zusätzlich jede Änderung verschlüsselt als Version in der Cloud.'}</p>
         <div class="row wrap" style="margin-bottom:12px">
           <button class="btn sm" data-act="export">${icon('download', 15)}Sicherung herunterladen</button>
           <button class="btn sm" data-act="import">${icon('upload', 15)}Sicherung einspielen</button>
           <button class="btn sm" data-act="snapnow">${icon('shield', 15)}Schnappschuss jetzt</button>
+          <button class="btn sm btn-ghost" data-a4="vorv4" title="Der Stand, den dieses Gerät vor dem ersten Start von Version 4 hatte (Rückweg)">${icon('undo', 15)}Stand vor Version 4</button>
         </div>
         <div class="small muted" style="margin-bottom:6px">Aktuell: ${counts.tasks} Vorgänge, ${counts.events} Termine, ${counts.notes} Notizen, ${counts.habits} Gewohnheiten, ${counts.goals} Ziele, ${counts.projects} Projekte, ${counts.people} Personen, ${counts.focus} Fokus-Einheiten.</div>
         <div class="optrow"><div class="grow"><b>Kalender-Datei (.ics)</b><span>Einmalig Termine aus einer Datei übernehmen (z. B. aus einem alten Kalender) oder deine Termine exportieren. Es entsteht keine Verbindung.</span></div><div class="row wrap"><button class="btn sm" data-act="icsimport" data-area="p">${icon('upload', 14)}Nach Privat</button><button class="btn sm" data-act="icsimport" data-area="b">${icon('upload', 14)}Nach Geschäftlich</button><button class="btn sm" data-act="icsexport">${icon('download', 14)}Exportieren</button></div></div>
@@ -310,6 +313,8 @@ export function render(route) {
         ${num('focus.len', s.focus.len, 'Standard-Fokuszeit', '', 5, 180, 5, 'Min')}
         ${num('focus.brk', s.focus.brk, 'Kurze Pause', '', 1, 60, 1, 'Min')}
         ${sw('focus.strict', s.focus.strict, 'Strenger Modus als Standard', 'Verlässt du die App länger als 12 Sekunden, zerbricht der Kristall')}
+        <div class="section-t">Routinen-Player (Standard für alle Routinen)</div>
+        ${sw('routinen.ton', s.routinen.ton !== false, 'Ton im Player', 'Gong und Hinweistöne. Jede Routine kann das in ihren Einstellungen überschreiben (wie global, an, aus).')}
       </section>
 
       <section class="card set-sec" id="set-leitsaetze"><div class="card-head"><h2>Leitsätze</h2></div>
@@ -331,6 +336,7 @@ async function renderSnaps(root) {
 }
 
 export function mount(root, ctx, route) {
+  S4.mount(root, ctx);
   const sec = SEC_ALIAS[route.parts[0]] || route.parts[0];
   if (sec && !mount._noScroll) { const el = root.querySelector('#set-' + sec); if (el) requestAnimationFrame(() => el.scrollIntoView({ block: 'start' })); }
   mount._noScroll = false;
@@ -453,7 +459,7 @@ export function mount(root, ctx, route) {
     if (a === 'demo') { A.seedDemo(); toast('Beispiele angelegt'); }
     if (a === 'obschoose') { try { await O.choose(); toast('Obsidian verbunden'); } catch (err) { if (err.name !== 'AbortError') toast(esc(err.message), { kind: 'bad' }); } A.render(); }
     if (a === 'obsregrant') { await O.regrant(); A.render(); }
-    if (a === 'obsnow') { await O.exportAll(true); toast(O.ostate.status === 'ok' ? `In Obsidian geschrieben (${O.ostate.written} Dateien)` : esc(O.ostate.error || 'Fehler'), { kind: O.ostate.status === 'ok' ? '' : 'bad' }); A.render(); }
+    if (a === 'obsnow') { await (O.kern ? O.exportKern(true) : O.exportAll(true)); toast(O.ostate.status === 'ok' ? `In Obsidian geschrieben (${O.ostate.written} Dateien)` : esc(O.ostate.error || 'Fehler'), { kind: O.ostate.status === 'ok' ? '' : 'bad' }); A.render(); }
     if (a === 'obsoff') { await O.disconnect(); A.render(); }
     if (a === 'export') download(`zeitblick-sicherung-${C.ymd(new Date())}.json`, S.exportJson());
     if (a === 'import') {

@@ -80,12 +80,15 @@ export function icon(name, size = 20, cls = '') {
 }
 
 /* ---------------- Dialoge (Desktop: zentriert/Seitenpanel, Handy: Bottom-Sheet) ---------------- */
+// Fenster-Regel (Zeitblick 4, 02-design-sprache.md): Dialoge schließen nur über ✕, Esc oder ihre Knöpfe – nie beim Klick
+// daneben (auch nicht beim Klick, mit dem man aus einem anderen Programm zurückkommt) und nie beim Wechsel der Ansicht.
+// Ausnahme: reine Auswahl-Fenster (auswahl: true, z. B. Suche/Befehle) schließen wie bisher beim Klick daneben.
 const openSheets = [];
-export function sheet({ title = '', body = '', footer = '', cls = '', side = false, onMount, onClose, label }) {
+export function sheet({ title = '', body = '', footer = '', cls = '', side = false, onMount, onClose, label, kopf = '', auswahl = false }) {
   const back = document.createElement('div');
   back.className = 'sheet-back' + (side ? ' side' : '');
   back.innerHTML = `<div class="sheet ${cls}" role="dialog" aria-modal="true" aria-label="${esc(label || title)}">
-    ${title !== null ? `<header class="sheet-head"><h2>${title}</h2><button class="icon-btn sheet-x" data-close aria-label="Schließen">${icon('x')}</button></header>` : ''}
+    ${title !== null ? `<header class="sheet-head"><h2>${title}</h2>${kopf}<button class="icon-btn sheet-x" data-close aria-label="Schließen">${icon('x')}</button></header>` : ''}
     <div class="sheet-body">${body}</div>
     ${footer ? `<footer class="sheet-foot">${footer}</footer>` : ''}
   </div>`;
@@ -102,11 +105,11 @@ export function sheet({ title = '', body = '', footer = '', cls = '', side = fal
     if (onClose) onClose(reason);
     try { if (prevFocus && prevFocus.focus) prevFocus.focus({ preventScroll: true }); } catch { }
   };
-  const api = { el, back, close };
+  const api = { el, back, close, auswahl };
   openSheets.push(api);
   back.addEventListener('pointerdown', e => { if (e.target === back) back._downOnBack = true; else back._downOnBack = false; });
   back.addEventListener('click', e => {
-    if (e.target === back && back._downOnBack) close('backdrop');
+    if (e.target === back && back._downOnBack && auswahl) close('backdrop');
     const c = e.target.closest('[data-close]'); if (c && back.contains(c)) close('button');
   });
   requestAnimationFrame(() => back.classList.add('in'));
@@ -118,7 +121,8 @@ export function sheet({ title = '', body = '', footer = '', cls = '', side = fal
   return api;
 }
 export function topSheet() { return openSheets[openSheets.length - 1] || null; }
-export function closeAllSheets() { [...openSheets].forEach(s => s.close('nav')); }
+/** Beim Wechsel der Ansicht schließen nur Auswahl-Fenster; alles mit Eingaben bleibt offen. alle = true schließt alles. */
+export function closeAllSheets(alle = false) { [...openSheets].forEach(s => { if (alle || s.auswahl) s.close('nav'); }); }
 
 // Sperrzeit für Bestätigungen (Einstellungen → Vorgänge); 0 = sofort bestätigbar
 let confirmSec = 3;

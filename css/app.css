@@ -1417,3 +1417,58 @@ body.cal-full .calfull-exit { display: none; }
   .ev.theme-tab span { display: none; }
   .cal-tools { order: 4; }
 }
+
+/* ================================================================== */
+/* Zeitblick 4 · Teil 0 – Entwürfe, Nebenfenster, Umzug, Beispieldaten */
+/* ================================================================== */
+
+/* Entwurfs-Karten unten rechts (wie bei Gmail) */
+.dock { position: fixed; right: 1rem; bottom: calc(1rem + var(--safe-b)); z-index: 90; display: flex; flex-direction: column; gap: 0.375rem; width: min(21rem, calc(100vw - 2rem)); pointer-events: none; }
+.dock > * { pointer-events: auto; }
+.dock[hidden] { display: none; }
+.dock-kopf { display: flex; align-items: center; justify-content: space-between; padding: 0 0.25rem 0 0.625rem; }
+.dock-k { display: flex; align-items: center; gap: 0.125rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow-pop); padding: 0.25rem 0.25rem 0.25rem 0.125rem; animation: dock-in .2s ease-out; }
+.dock-t { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.5rem; border: 0; background: none; color: var(--ink); text-align: left; padding: 0.375rem 0.5rem; border-radius: var(--r-sm); cursor: pointer; }
+.dock-t:hover { background: var(--hover); }
+.dock-t svg { color: var(--accent); flex: none; }
+.dock-t .grow { min-width: 0; display: flex; flex-direction: column; }
+.dock-t b { font-size: 0.8125rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dock-mehr, .dock-pille { align-self: flex-end; display: inline-flex; align-items: center; gap: 0.4375rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 1.25rem; padding: 0.4375rem 0.875rem; font-size: 0.8125rem; font-weight: 600; box-shadow: var(--shadow-pop); cursor: pointer; }
+.dock-pille svg { color: var(--accent); }
+.dock-liste { display: flex; flex-direction: column; gap: 0.375rem; }
+.dock-liste .dock-k { box-shadow: none; }
+@keyframes dock-in { from { opacity: 0; transform: translateY(0.375rem); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .dock-k { animation: none; } }
+/* Hinweise wandern nach oben, solange Karten offen sind */
+body.mit-dock #toasts { bottom: calc(5.5rem + var(--safe-b)); }
+@media (max-width: 759px) {
+  .dock { right: auto; left: 1rem; bottom: calc(4.75rem + var(--safe-b)); width: auto; }
+  body.mit-dock #toasts { bottom: calc(8.25rem + var(--safe-b)); }
+}
+
+/* Vorgang-Editor: Entwurfsstand und Knopf „eigenes Fenster“ */
+.sheet-win { color: var(--muted); }
+.sheet-foot .entwurf-hinweis { margin-right: auto; align-self: center; }
+
+/* Nebenfenster (fenster.html): der Dialog füllt das ganze Fenster, ohne Hintergrund */
+.fenster-flaeche { min-height: 100vh; background: var(--bg); display: grid; place-items: center; }
+.sheet-back:has(.sheet-fenster) { background: var(--bg); padding: 0; place-items: stretch; transition: none; }
+.sheet.sheet-fenster { width: 100%; max-width: none; max-height: none; height: 100vh; border-radius: 0; box-shadow: none; transform: none; }
+
+/* Umzug von der alten Adresse */
+.umzug-band { position: fixed; top: calc(0.625rem + var(--safe-t)); left: 50%; transform: translateX(-50%); z-index: 95; display: flex; align-items: center; gap: 0.75rem; width: min(52rem, calc(100vw - 1.5rem)); padding: 0.625rem 0.75rem 0.625rem 0.875rem; background: var(--surface); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line)); border-radius: var(--r); box-shadow: var(--shadow-pop); font-size: 0.8125rem; color: var(--ink-2); }
+.umzug-band > svg { color: var(--accent); flex: none; }
+@media (max-width: 759px) { .umzug-band { flex-wrap: wrap; top: auto; bottom: calc(4.75rem + var(--safe-b)); } }
+.page.umzug { display: grid; place-items: center; min-height: 70vh; }
+.umzug-karte { max-width: 34rem; text-align: center; padding: 2rem 1.75rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+.umzug-karte h1 { font-size: 1.25rem; }
+.umzug-karte p { color: var(--ink-2); line-height: 1.6; }
+.umzug-symbol { width: 3.5rem; height: 3.5rem; border-radius: 1rem; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+
+/* Beispieldaten, Schlüssel, Einstellung je Element */
+.pill.bsp { height: 1.125rem; padding: 0 0.4375rem; font-size: 0.6875rem; background: color-mix(in srgb, var(--warn) 16%, var(--surface)); color: color-mix(in srgb, var(--warn) 55%, var(--ink)); vertical-align: 1px; }
+.bsp-zeile { gap: 0.5rem; }
+.mono { font-family: var(--mono); letter-spacing: 0.02em; }
+.schluessel-box { margin: 0.875rem 0 0.25rem; padding: 0.875rem 1rem; border-radius: var(--r); background: var(--surface-3); border: 1px dashed var(--line-2); font-size: 0.9375rem; line-height: 1.7; word-break: break-all; text-align: center; user-select: all; }
+.seg.sm button.on { color: var(--ink); background: var(--surface); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 0 0 1px var(--line); }
+.seg.sm button { height: 1.5rem; padding: 0 0.625rem; font-size: 0.75rem; }

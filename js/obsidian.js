@@ -1,9 +1,13 @@
 // Zeitblick – automatische Ablage im Obsidian-Vault (Markdown + JSON + tägliche Backups)
 import * as C from './core.js';
 import * as S from './store.js';
+import * as KR from './kern.js';
 
 export const ostate = { status: 'off', last: 0, error: '', folder: '', written: 0 };
-export const supported = typeof window !== 'undefined' && 'showDirectoryPicker' in window;
+// Am Laptop schreibt seit Zeitblick 4 der Kern den Spiegel direkt in den Vault (ohne Ordner-Freigabe im Browser).
+// Dann nur Markdown: Datensicherungen macht der Kern selbst, die komplette Datendatei gehört nicht in den Vault.
+export const kern = KR.aktiv;
+export const supported = KR.aktiv || (typeof window !== 'undefined' && 'showDirectoryPicker' in window);
 const subs = new Set();
 export function onState(fn) { subs.add(fn); return () => subs.delete(fn); }
 function set(p) { Object.assign(ostate, p); for (const f of subs) { try { f(ostate); } catch { } } }
@@ -14,6 +18,12 @@ let appUrlFn = () => '';
 export function setAppUrl(fn) { appUrlFn = fn; }
 
 export async function init() {
+  if (KR.aktiv) {
+    if (S.local.obsidian && S.local.obsidian.kernAus) { set({ status: 'off', folder: '' }); return; }
+    set({ status: 'ok', folder: 'Vault' });
+    schedule(3000);
+    return;
+  }
   if (!supported) { set({ status: 'unsupported' }); return; }
   handle = await S.kvGet('obsHandle');
   if (!handle || !handle.queryPermission) { set({ status: 'off' }); return; }
@@ -53,9 +63,44 @@ export async function disconnect() {
 }
 
 export function schedule(delay = 8000) {
-  if (!handle || ostate.status !== 'ok') return;
+  if ((!handle && !KR.aktiv) || ostate.status !== 'ok') return;
   clearTimeout(timer);
-  timer = setTimeout(() => exportAll(false), delay);
+  timer = setTimeout(() => (KR.aktiv ? exportKern(false) : exportAll(false)), delay);
+}
+
+/** Spiegel über den Kern: nur geänderte Markdown-Dateien, entfernte Vorgänge (erledigt → Archiv) werden gelöscht. */
+export async function exportKern(force = false) {
+  if (!KR.aktiv) return;
+  if (busy) { again = true; return; }
+  busy = true;
+  try {
+    const files = buildFiles(S.getData(), new Date(), appUrlFn());
+    const cache = force ? {} : ((await S.kvGet('obsCacheKern')) || {});
+    const next = {}, dateien = [], loeschen = [];
+    for (const [path, content] of files) {
+      if (!path.endsWith('.md')) continue;
+      const h = fnv(content);
+      next[path] = h;
+      if (cache[path] !== h) dateien.push({ pfad: path, inhalt: content });
+    }
+    for (const path of Object.keys(cache)) if (!next[path] && REMOVABLE.some(p => path.startsWith(p))) loeschen.push(path);
+    let written = 0;
+    for (let i = 0; i < Math.max(dateien.length, 1); i += 200) {
+      const stueck = dateien.slice(i, i + 200);
+      if (!stueck.length && !(i === 0 && loeschen.length)) break;
+      const r = await KR.api('spiegel', { method: 'PUT', body: { dateien: stueck, loeschen: i === 0 ? loeschen : [] } });
+      if (r.aus) { set({ status: 'off', error: '' }); return; }
+      written += r.geschrieben || 0;
+      if (r.ordner) set({ folder: r.ordner });
+    }
+    await S.kvSet('obsCacheKern', next);
+    set({ status: 'ok', last: Date.now(), error: '', written });
+  } catch (e) {
+    set({ status: 'error', error: e.message || String(e) });
+  } finally {
+    busy = false;
+    if (again) { again = false; schedule(2000); }
+  }
 }
 
 function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36) + ':' + str.length; }
