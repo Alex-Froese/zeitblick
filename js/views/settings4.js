@@ -30,7 +30,7 @@ export function syncSection() {
         <div class="row wrap"><button class="btn btn-primary sm" data-a4="jetzt">${icon('sync', 15)}Jetzt abgleichen</button><button class="btn sm" data-a4="koppeln">${icon('qr', 15)}Handy verbinden</button><button class="btn sm" data-a4="schluessel">${icon('shield', 15)}Wiederherstellungs-Schlüssel</button><button class="btn sm btn-ghost" data-a4="trennen" style="color:var(--bad)">Trennen</button></div>
         <p class="small muted" style="margin-top:10px">Der alte Zeitblick-3-Speicher (unverschlüsselt) wird nicht mehr benutzt und bleibt unverändert. Löschen kannst du ihn später selbst auf github.com, wenn alles läuft.</p>`
       : `<ol class="steps">
-          <li><a href="https://github.com/settings/tokens/new?scopes=gist&description=Zeitblick%204" target="_blank" rel="noopener">Token erstellen</a>: Haken bei „gist“, Ablauf „No expiration“, unten „Generate token“. Den alten Token aus Zeitblick 3 kannst du auch nehmen.</li>
+          <li><a href="https://github.com/settings/tokens/new?scopes=gist&description=Zeitblick%204" target="_blank" rel="noopener">Token erstellen</a>: „Tokens (classic)“, nur der Haken bei „gist“, Ablauf „1 Jahr“ (nie „No expiration“), unten „Generate token“. Bitte einen neuen Token anlegen, nicht den aus Zeitblick 3. Zwei Wochen vor Ablauf einen neuen anlegen und hier eintragen.</li>
           <li>Token hier einfügen. Zeitblick legt einen <b>neuen, verschlüsselten</b> Speicher an und zeigt dir einmal den Wiederherstellungs-Schlüssel zum Aufschreiben.</li>
         </ol>
         <div class="field"><label>GitHub-Token</label><input class="input" data-s4="token" type="password" placeholder="ghp_… oder github_pat_…" autocomplete="off"></div>

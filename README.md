@@ -20,7 +20,7 @@ Zeitblick ist eine installierbare Web-App (PWA) für Handy und Laptop (am Laptop
 - Inbox, Fokus mit Kristall, Ziele, Projekte, Beziehungen, Archiv & Papierkorb, Sync, Backups, Obsidian-Ablage (inkl. Journal und Rückblicken), Hell/Dunkel/Nacht-Rotlicht.
 - **Bauplan und Versionsverlauf** in der App (Einstellungen → Info & Bauplan), eigenes Regelwerk unter **Anleitung → Mein System**.
 
-Alles läuft kostenlos: GitHub (Hosting, Sync, Server-Erinnerungen) und ntfy (Push).
+Alles läuft kostenlos: GitHub (Hosting, verschlüsselter Sync) und ntfy (Push).
 
 ---
 
@@ -60,7 +60,7 @@ Einfach alle Dateien im Repository ersetzen (siehe „Updates“ unten). Beim er
 
 ## 3. Sync zwischen allen Geräten (verschlüsselt)
 
-1. [Token erstellen](https://github.com/settings/tokens/new?scopes=gist&description=Zeitblick%204): Haken bei **gist** ist gesetzt, Ablauf **No expiration**, unten **Generate token**, Token kopieren.
+1. [Token erstellen](https://github.com/settings/tokens/new?scopes=gist&description=Zeitblick%204): **Tokens (classic)**, nur der Haken bei **gist**, Ablauf **1 Jahr** (nie „No expiration“), unten **Generate token**, Token kopieren.
 2. Am Laptop in Zeitblick **Einstellungen → Sync & Cloud** einfügen und **Verbinden**.
 3. Zeitblick legt einen **neuen, verschlüsselten** Speicher an und zeigt einmal den **Wiederherstellungs-Schlüssel**. Bitte auf Papier oder im Passwort-Manager notieren. Ohne ihn sind die Daten im Speicher nicht lesbar, auch nicht für GitHub.
 
@@ -105,17 +105,11 @@ TABLE status, faellig, ampel, kategorie FROM "Zeitblick/Vorgänge" WHERE bereich
 
 Nach einem Browser-Neustart fragt Chrome einmal nach dem Zugriff – in Zeitblick erscheint dann **Zugriff erlauben**.
 
-## 7. Server-Erinnerungen (in Zeitblick 4 vorerst aus)
+## 7. Erinnerungen bei geschlossener App
 
-> Der verschlüsselte Speicher ist für diesen Helfer nicht lesbar. Zeitblick plant Push-Nachrichten bis zu drei Tage im Voraus, sobald die App irgendwo geöffnet ist. Später übernimmt das der Zeitblick-Kern am Laptop. Die Anleitung unten gilt nur für Zeitblick 3.
+Zeitblick plant Push-Nachrichten bis zu drei Tage im Voraus, sobald die App irgendwo geöffnet ist. Später übernimmt das der Zeitblick-Kern am Laptop.
 
-Damit Erinnerungen auch nach mehreren Tagen ohne geöffnete App kommen, läuft stündlich ein kostenloser Helfer (GitHub Action) in deinem Repository.
-
-1. Im Repo **Settings → Secrets and variables → Actions → New repository secret**:
-   - `ZB_GIST_TOKEN` = dein Token aus Schritt 3
-   - `ZB_GIST_ID` = die Gist-ID (Zeitblick → Einstellungen → Sync & Cloud → Gist-ID kopieren)
-2. Reiter **Variables → New repository variable**: `ZB_APP_URL` = `https://DEIN-NAME.github.io/zeitblick/`
-3. Reiter **Actions** öffnen, Workflows erlauben, **Zeitblick Erinnerungen → Run workflow**.
+Für Zeitblick 4 werden **keine GitHub-Actions-Secrets** angelegt. Der Sync-Speicher ist verschlüsselt, und der Token gehört nur in Zeitblick selbst. Den Helfer aus Zeitblick 3 (GitHub Action) gibt es nicht mehr. Wer ihn früher eingerichtet hat, löscht dort die Secrets `ZB_GIST_TOKEN` und `ZB_GIST_ID`.
 
 ## Datensicherung
 
