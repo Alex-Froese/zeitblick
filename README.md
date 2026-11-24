@@ -1,6 +1,9 @@
-# Zeitblick 3 – deine Lebenszentrale
+# Zeitblick 4 – deine Lebenszentrale
 
-Zeitblick ist eine installierbare Web-App (PWA) für Handy und Laptop – dein Kontrollzentrum für das ganze Leben, privat und geschäftlich:
+> **Neu in Zeitblick 4 (Teil 0 „Fundament“):** Am Laptop wohnt Zeitblick in einem eigenen kleinen Programm, dem **Zeitblick-Kern** (`Zeitblick.exe`, Ordner `kern/`, gebaut mit `bauen.cmd`). Er liefert die App unter `http://127.0.0.1:42480` aus und hält die Daten als Dateien im Benutzerordner, mit automatischen Sicherungen. Der Abgleich mit dem Handy läuft **verschlüsselt** (AES-256 + HMAC) über einen privaten Gist, den Schlüssel haben nur deine Geräte. Dazu kommen Kürzel von überall (Strg+Alt+Z zeigen, Strg+Alt+A neuer Vorgang), ein eigenes Taskleisten-Symbol, Entwürfe, die nie verloren gehen, und die 8 Säulen als Lebensbereiche. Wer schon Zeitblick 3 im Browser hatte, klickt dort einmal auf **„Daten umziehen“**. Die alten Daten bleiben unverändert stehen.
+
+
+Zeitblick ist eine installierbare Web-App (PWA) für Handy und Laptop (am Laptop mit eigenem Kern) – dein Kontrollzentrum für das ganze Leben, privat und geschäftlich:
 
 - **Heute** – die eine verbindliche Tagesansicht: Tagesring über alles (Vorgänge, Mehrmals täglich, Routinen, Gewohnheiten, Einprägen, Rückblick), Jetzt & Nächstes mit Themenblock-Vorschlägen, Tagesplan, Von gestern offen. Blöcke frei anordnen.
 - **Kalender** im Google-Stil: Woche 0–24 Uhr auf einen Blick („Alles sichtbar“, Nacht gestaucht), Vollbild mit **V**, saubere Darstellung kurzer und überlappender Blöcke, Timeboxing.
@@ -55,17 +58,17 @@ Einfach alle Dateien im Repository ersetzen (siehe „Updates“ unten). Beim er
 3. **Einstellungen → Einrichtung** öffnen und die Schritte abhaken.
 4. **Einstellungen → Kategorien & Lebensbereiche**: lege deine Kategorien und Lebensbereiche an (mit Vorschlägen).
 
-## 3. Sync zwischen allen Geräten
+## 3. Sync zwischen allen Geräten (verschlüsselt)
 
-1. [Token erstellen](https://github.com/settings/tokens/new?scopes=gist&description=Zeitblick): Haken bei **gist** ist gesetzt, Ablauf **No expiration**, unten **Generate token**, Token kopieren.
-2. In Zeitblick **Einstellungen → Sync & Cloud** einfügen und **Verbinden**.
-3. Zeitblick legt einen privaten Gist an. Jede Änderung wird dort als Version gespeichert (Cloud-Backup mit Verlauf).
+1. [Token erstellen](https://github.com/settings/tokens/new?scopes=gist&description=Zeitblick%204): Haken bei **gist** ist gesetzt, Ablauf **No expiration**, unten **Generate token**, Token kopieren.
+2. Am Laptop in Zeitblick **Einstellungen → Sync & Cloud** einfügen und **Verbinden**.
+3. Zeitblick legt einen **neuen, verschlüsselten** Speicher an und zeigt einmal den **Wiederherstellungs-Schlüssel**. Bitte auf Papier oder im Passwort-Manager notieren. Ohne ihn sind die Daten im Speicher nicht lesbar, auch nicht für GitHub.
 
 ## 4. Handy verbinden
 
-1. Am Laptop **Einstellungen → Sync & Cloud → Weiteres Gerät verbinden**.
-2. Den QR-Code mit der Handy-Kamera scannen, im Browser **Verbinden** tippen.
-3. Im Browser-Menü **Zum Startbildschirm hinzufügen** bzw. **App installieren**.
+1. Am Laptop **Einstellungen → Sync & Cloud → Handy verbinden**.
+2. Den QR-Code mit der Handy-Kamera scannen und im Browser **Verbinden** tippen. Zugang und Schlüssel stecken im Code, getippt werden muss nichts.
+3. Im Browser-Menü **App installieren**.
 
 ## 5. Push aufs Handy (bleibt, bis du sie wegwischst)
 
@@ -102,7 +105,9 @@ TABLE status, faellig, ampel, kategorie FROM "Zeitblick/Vorgänge" WHERE bereich
 
 Nach einem Browser-Neustart fragt Chrome einmal nach dem Zugriff – in Zeitblick erscheint dann **Zugriff erlauben**.
 
-## 7. Server-Erinnerungen (optional, empfohlen)
+## 7. Server-Erinnerungen (in Zeitblick 4 vorerst aus)
+
+> Der verschlüsselte Speicher ist für diesen Helfer nicht lesbar. Zeitblick plant Push-Nachrichten bis zu drei Tage im Voraus, sobald die App irgendwo geöffnet ist. Später übernimmt das der Zeitblick-Kern am Laptop. Die Anleitung unten gilt nur für Zeitblick 3.
 
 Damit Erinnerungen auch nach mehreren Tagen ohne geöffnete App kommen, läuft stündlich ein kostenloser Helfer (GitHub Action) in deinem Repository.
 
