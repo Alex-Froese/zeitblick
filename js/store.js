@@ -1,5 +1,6 @@
 // Zeitblick – lokaler Speicher (IndexedDB), Zustand, Änderungen, Backups
 import * as C from './core.js';
+import * as KR from './kern.js';
 
 /* -------------------- IndexedDB-Wrapper mit Fallback -------------------- */
 const DB_NAME = 'zeitblick';
@@ -131,16 +132,20 @@ export async function init() {
   if (stored && typeof stored === 'object') {
     data = C.emptyData();
     for (const c of C.COLLECTIONS) data[c] = stored[c] || {};
-    // Rückweg: Vor dem ersten Start von Version 4 bleibt der alte Stand unverändert als eigene Sicherung im Gerät
-    // (Einstellungen → Datensicherung → „Stand vor Version 4“). Version 4 ändert nichts, sie ergänzt nur.
+    // Rückweg: Bevor Version 4 hier zum ersten Mal umstellt, bleibt der alte Stand unverändert als eigene Sicherung im
+    // Gerät (Einstellungen → Datensicherung → „Stand vor Version 4“). Version 4 ändert nichts, sie ergänzt nur.
     const vorher = data.meta.schema && !data.meta.schema.deleted ? data.meta.schema.v : 3;
-    if (vorher < 4 && !(await kvGet('vor-v4'))) await kvSet('vor-v4', { at: Date.now(), version: vorher, data: C.structuredCloneSafe(stored) });
+    if (v4Erlaubt() && vorher < 4 && !(await kvGet('vor-v4'))) await kvSet('vor-v4', { at: Date.now(), version: vorher, data: C.structuredCloneSafe(stored) });
   }
   ensureDefaults();
   runMigrations();
   saveLocal();
   return data;
 }
+
+/** Version 4 stellt nur dort um, wo die Daten wohnen: im Zeitblick-Kern am Laptop und auf Geräten mit dem neuen,
+ *  verschlüsselten Sync (Handy). Unter der alten Adresse am Laptop bleibt die Ablage bis zum Umzug, wie sie ist. */
+export function v4Erlaubt() { return KR.aktiv || !!(local.gist && local.gist.v === 4); }
 
 /** Der Stand vor Version 4 (falls dieses Gerät schon Version 3 hatte). */
 export async function vorV4() { return kvGet('vor-v4'); }
@@ -150,9 +155,9 @@ function ensureDefaults() {
   if (!data.meta.leitsaetze) data.meta.leitsaetze = { id: 'leitsaetze', list: C.DEFAULT_LEITSAETZE, updatedAt: 1, dev: 'seed' };
 }
 
-/** Daten aus Version 1 auf Version 2 heben (idempotent) */
+/** Daten aus Version 1 auf Version 2 heben, ab Version 4 auch auf das neue Datenmodell (idempotent) */
 export function runMigrations() {
-  const list = C.migrations(data);
+  const list = C.migrations(data, { v4: v4Erlaubt() });
   if (!list.length) return 0;
   for (const m of list) {
     if (m.remove) { const prev = data[m.col][m.rec.id]; if (prev && !prev.deleted) { data[m.col][m.rec.id] = stamp({ id: m.rec.id, deleted: true }, prev); } }

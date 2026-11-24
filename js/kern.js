@@ -19,7 +19,8 @@ export function kernUrl() {
 /** Herkunft, von der ein Umzug angenommen wird: die alte Adresse (GitHub Pages), in Testinstanzen localhost. */
 export function umzugHerkunft() {
   const l = ['https://alex-froese.github.io'];
-  if (test && K.port) l.push(`http://localhost:${K.port}`);
+  // Testinstanz: die Handy-Form unter localhost und (nur zum Prüfen der Übergabe) die eigene Adresse
+  if (test && K.port) l.push(`http://localhost:${K.port}`, location.origin);
   return l;
 }
 

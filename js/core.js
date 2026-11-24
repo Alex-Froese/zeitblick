@@ -1219,8 +1219,10 @@ export function lifeOfTask(t, data) {
 
 /* ---------------- Migration Version 1 → 2 ---------------- */
 const V1_SEED_IDS = new Set(['c_hyg', 'c_spo', 'c_soz', 'c_par', 'c_ges', 'c_hau', 'c_fin', 'c_aus', 'c_ent', 'c_fre', 'c_mar', 'c_ver', 'c_auf', 'c_buc', 'c_vwa', 'c_web', 'c_str', 'c_ein']);
-/** Liefert Liste [{col, rec}] mit nötigen Änderungen (idempotent) */
-export function migrations(data) {
+/** Liefert Liste [{col, rec}] mit nötigen Änderungen (idempotent).
+ *  v4 = false: nur die alten Schritte (Version 1 → 3). So bleibt die alte Ablage unter der alten Adresse bis zum Umzug,
+ *  wie sie ist; Version 4 stellt nur dort um, wo die Daten wohnen (Kern am Laptop, Geräte mit verschlüsseltem Sync). */
+export function migrations(data, { v4 = true } = {}) {
   const out = [];
   for (const t of Object.values(data.tasks || {})) {
     if (!t || t.deleted || t.status) continue;
@@ -1233,7 +1235,7 @@ export function migrations(data) {
     if (!c || c.deleted) continue;
     if (c.dev === 'seed' && V1_SEED_IDS.has(c.id) && !used.has(c.id)) out.push({ col: 'cats', rec: { id: c.id, deleted: true }, remove: true });
   }
-  out.push(...migrationsV4(data));
+  if (v4) out.push(...migrationsV4(data));
   return out;
 }
 
@@ -1275,29 +1277,46 @@ export function einst(data, el, pfad) {
  *  Beispieldaten aus Version 3 (Demo, Beispiel-Vorlagen) bekommen das Abzeichen „Beispiel“. Idempotent. */
 export function migrationsV4(data) {
   const out = [];
-  const life = Object.values(data.life || {}).filter(x => x && !x.deleted);
   const norm = s => String(s || '').toLowerCase();
-  const vergeben = new Set(life.filter(l => l.saeule).map(l => l.saeule));
-  const belegt = new Set(life.filter(l => l.saeule).map(l => l.id));
   const unberuehrt = l => l && l.auto && !(l.ratings && l.ratings.length) && !(l.links && l.links.length);
+  // feste Reihenfolge, damit jedes Gerät gleich entscheidet: Position, dann mehr Bewertungen, dann Nummer
+  const reihe = (a, b) => (a.order ?? 99) - (b.order ?? 99) || ((b.ratings || []).length - (a.ratings || []).length) || String(a.id).localeCompare(String(b.id));
+  // Arbeitsstand: was diese Runde ändert, sieht die nächste Entscheidung schon
+  const stand = new Map(Object.values(data.life || {}).filter(x => x && x.id).map(x => [x.id, x]));
+  const live = () => [...stand.values()].filter(x => x && !x.deleted);
+  const aendern = (rec, remove = false) => {
+    const m = remove ? { col: 'life', rec: { id: rec.id, deleted: true }, remove: true } : { col: 'life', rec };
+    stand.set(rec.id, remove ? { ...rec, deleted: true } : rec);
+    const i = out.findIndex(x => x.col === 'life' && x.rec.id === rec.id);
+    if (i >= 0) out[i] = m; else out.push(m);
+  };
+  // 1. Doppelte Säulen (zwei Geräte haben unabhängig umgestellt): eine behält die Säule, überall nach derselben Regel.
+  //    Leere Vorbelegungen gehen, eigene Bereiche bleiben (ohne Säule, hinter den Säulen).
+  for (const s of SAEULEN) {
+    const mit = live().filter(l => l.saeule === s.key);
+    if (mit.length < 2) continue;
+    const eigene = mit.filter(l => !unberuehrt(l)).sort(reihe);
+    const leere = mit.filter(l => unberuehrt(l)).sort(reihe);
+    const behalten = eigene[0] || leere[0];
+    for (const l of leere) if (l.id !== behalten.id) aendern(l, true);
+    for (const l of eigene) if (l.id !== behalten.id) aendern({ ...l, saeule: null, saeuleFrei: true, order: SAEULEN.length + (l.order ?? 0) });
+  }
+  // 2. Säulen zuordnen oder ergänzen. Passt ein eigener Bereich (z. B. nach dem Umzug), wird er die Säule; die leere Vorbelegung geht.
   SAEULEN.forEach((s, i) => {
     const sid = saeuleId(s.key);
-    const auto = data.life && data.life[sid];
-    // Passt ein eigener Bereich besser (z. B. nach dem Umzug der alten Daten), wird er die Säule; die leere Vorbelegung geht.
-    const eigener = life.find(l => !belegt.has(l.id) && l.id !== sid && (norm(l.name) === norm(s.name) || s.worte.some(w => norm(l.name).includes(w))));
-    if (eigener && (!vergeben.has(s.key) || (auto && !auto.deleted && auto.saeule === s.key && unberuehrt(auto)))) {
-      out.push({ col: 'life', rec: { ...eigener, saeule: s.key, order: i, desc: eigener.desc || s.frage } });
-      belegt.add(eigener.id);
-      if (auto && !auto.deleted && unberuehrt(auto)) out.push({ col: 'life', rec: { id: sid, deleted: true }, remove: true });
-      vergeben.add(s.key);
+    const auto = stand.get(sid);
+    const mit = live().filter(l => l.saeule === s.key);
+    const eigener = live().filter(l => !l.saeule && !l.saeuleFrei && l.id !== sid && (norm(l.name) === norm(s.name) || s.worte.some(w => norm(l.name).includes(w)))).sort(reihe)[0];
+    if (eigener && (!mit.length || (mit.length === 1 && mit[0].id === sid && unberuehrt(mit[0])))) {
+      aendern({ ...eigener, saeule: s.key, order: i, desc: eigener.desc || s.frage });
+      if (auto && !auto.deleted && unberuehrt(auto)) aendern(auto, true);
       return;
     }
-    if (vergeben.has(s.key) || auto) return;   // schon da, oder bewusst gelöscht (Löschmarker)
-    out.push({ col: 'life', rec: { id: sid, name: s.name, icon: s.icon, desc: s.frage, order: i, ratings: [], saeule: s.key, auto: true } });
-    vergeben.add(s.key);
+    if (mit.length || auto) return;   // schon da, oder bewusst gelöscht (Löschmarker)
+    aendern({ id: sid, name: s.name, icon: s.icon, desc: s.frage, order: i, ratings: [], saeule: s.key, auto: true });
   });
-  // eigene Bereiche ohne Säule hinter die Säulen
-  for (const l of life) if (!belegt.has(l.id) && !l.saeule && (l.order ?? 0) < SAEULEN.length && !out.some(m => m.rec.id === l.id)) out.push({ col: 'life', rec: { ...l, order: SAEULEN.length + (l.order ?? 0) } });
+  // 3. eigene Bereiche ohne Säule hinter die Säulen
+  for (const l of live()) if (!l.saeule && (l.order ?? 0) < SAEULEN.length) aendern({ ...l, order: SAEULEN.length + (l.order ?? 0) });
   for (const c of BEISPIEL_SAMMLUNGEN) for (const x of Object.values(data[c] || {})) {
     if (!x || x.deleted || x.beispiel !== undefined) continue;
     if (x.demo || (c === 'templates' && x.example)) out.push({ col: c, rec: { ...x, beispiel: true } });

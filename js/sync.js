@@ -100,9 +100,18 @@ async function kernRunde(opts) {
   }
 }
 
+const gistHoerer = new Set();
+/** Meldet nur, wenn sich am Gist-Zustand des Kerns etwas Sichtbares ändert (verbunden, Status, Fehler, letzter Abgleich). */
+export function onGist(fn) { gistHoerer.add(fn); return () => gistHoerer.delete(fn); }
+let gistSig = '';
 async function gistInfo() {
   if (!KR.aktiv) return;
-  try { setState({ gist: await KR.api('sync/zustand') }); } catch { /* Kern kurz weg */ }
+  try {
+    const g = await KR.api('sync/zustand');
+    setState({ gist: g });
+    const sig = [g.verbunden, g.status, g.fehler, g.letzter].join('|');
+    if (sig !== gistSig) { gistSig = sig; for (const f of gistHoerer) { try { f(g); } catch { } } }
+  } catch { /* Kern kurz weg */ }
 }
 
 /* -------------------- Ziel 2: verschlüsselter Gist (Handy) -------------------- */

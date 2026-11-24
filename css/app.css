@@ -1472,3 +1472,4 @@ body.mit-dock #toasts { bottom: calc(5.5rem + var(--safe-b)); }
 .schluessel-box { margin: 0.875rem 0 0.25rem; padding: 0.875rem 1rem; border-radius: var(--r); background: var(--surface-3); border: 1px dashed var(--line-2); font-size: 0.9375rem; line-height: 1.7; word-break: break-all; text-align: center; user-select: all; }
 .seg.sm button.on { color: var(--ink); background: var(--surface); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 0 0 1px var(--line); }
 .seg.sm button { height: 1.5rem; padding: 0 0.625rem; font-size: 0.75rem; }
+.sheet.sheet-fenster .sheet-head::before { display: none; }

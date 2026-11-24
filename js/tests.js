@@ -91,6 +91,10 @@ function anwenden(d) {
 }
 
 function migrationsTests() {
+  const altAdresse = C.emptyData();
+  altAdresse.life = { l1: { id: 'l1', name: 'Gesundheit & Körper', order: 0 } };
+  altAdresse.tasks = { t1: { id: 't1', title: 'Demo', status: 'neu', demo: true } };
+  pruefe('alte Adresse vor dem Umzug: keine Umstellung auf Version 4', C.migrations(altAdresse, { v4: false }).length === 0);
   const v3 = C.emptyData();
   v3.life = {
     l1: { id: 'l1', name: 'Gesundheit & Körper', icon: '🫀', order: 0, ratings: [{ d: '2026-11-01', v: 7 }] },
@@ -126,6 +130,25 @@ function migrationsTests() {
   const ges = Object.values(merged.life).filter(x => x && !x.deleted && x.saeule === 'gesundheit');
   pruefe('Umzug: alter Bereich übernimmt die Säule, leere Vorbelegung geht', ges.length === 1 && ges[0].id === 'la' && merged.life.l_gesundheit.deleted === true);
   pruefe('Umzug: danach idempotent', anwenden(merged) === 0);
+}
+
+function doppelteSaeulenTests() {
+  // Zwei Geräte haben unabhängig umgestellt, danach zusammengeführt: je Säule bleibt genau einer, nichts Eigenes geht verloren.
+  const d = C.emptyData();
+  d.life = {
+    l_unternehmen: { id: 'l_unternehmen', name: 'Unternehmen', saeule: 'unternehmen', auto: true, ratings: [], order: 0 },
+    lU: { id: 'lU', name: 'Unternehmen', saeule: 'unternehmen', ratings: [{ d: '2026-11-01', v: 6 }], order: 0 },
+    lP: { id: 'lP', name: 'Partnerschaft', saeule: 'beziehungen', ratings: [{ d: '2026-11-01', v: 8 }], order: 4 },
+    lF: { id: 'lF', name: 'Familie & Freunde', saeule: 'beziehungen', ratings: [{ d: '2026-11-01', v: 5 }], order: 4 },
+  };
+  anwenden(d);
+  const proSaeule = {};
+  for (const l of Object.values(d.life)) if (l && !l.deleted && l.saeule) proSaeule[l.saeule] = (proSaeule[l.saeule] || 0) + 1;
+  pruefe('doppelte Säulen: je Säule genau ein Bereich', Object.keys(proSaeule).length === 8 && Object.values(proSaeule).every(n => n === 1), JSON.stringify(proSaeule));
+  pruefe('doppelte Säulen: leere Vorbelegung geht, eigener Bereich bleibt', d.life.l_unternehmen.deleted === true && d.life.lU.saeule === 'unternehmen');
+  const [mitS, ohneS] = [d.life.lP, d.life.lF].sort((a, b) => (b.saeule ? 1 : 0) - (a.saeule ? 1 : 0));
+  pruefe('doppelte Säulen: zweiter eigener Bereich bleibt erhalten (ohne Säule)', mitS.saeule === 'beziehungen' && !ohneS.deleted && !ohneS.saeule && ohneS.ratings.length === 1 && ohneS.order >= 8);
+  pruefe('doppelte Säulen: danach idempotent', anwenden(d) === 0);
 }
 
 function einstTests() {
@@ -170,6 +193,7 @@ async function fensterRegelTests() {
   try {
     await kryptoTests();
     migrationsTests();
+    doppelteSaeulenTests();
     einstTests();
     entwurfTests();
     await fensterRegelTests();

@@ -737,6 +737,7 @@ async function boot() {
     scheduleRender();
   });
   SY.onState(() => updateSyncDot());
+  SY.onGist(() => { if (parseRoute().name === 'einstellungen') scheduleRender(); });
   N.onState(() => { if (parseRoute().name === 'einstellungen') scheduleRender(); });
   O.onState(() => { if (parseRoute().name === 'einstellungen') scheduleRender(); });
   F.onChange(info => {

@@ -50,19 +50,52 @@ export function starten() {
   });
 }
 
-function zaehlen(d) {
-  const c = S.countData(d);
+/** c = Zählung wie S.countData */
+function zaehlen(c) {
   return [[c.tasks, 'Vorgänge'], [c.events, 'Termine'], [c.habits, 'Gewohnheiten und Routinen'], [c.notes, 'Notizen'], [c.inbox, 'Inbox'], [c.goals, 'Ziele'], [c.projects, 'Projekte'], [c.people, 'Personen'], [c.templates, 'Vorlagen']]
     .filter(([n]) => n > 0).map(([n, l]) => `${n} ${l}`).join(' · ') || 'keine Einträge';
 }
 
-/** Kern-Seite #/umzug: wartet auf die Daten der alten Adresse. */
+/** Übernimmt Daten der alten Adresse in den Kern: erst unverändert ablegen (der Kern sichert vorher), dann
+ *  zusammenführen wie beim Sync. Gemeinsamer Weg für die Übergabe per Klick und den Ersatzweg per Sicherungsdatei. */
+export async function uebernehmen(daten, { lokal = null, herkunft = '', version = '' } = {}) {
+  await KR.api('umzug', { method: 'POST', body: { text: JSON.stringify({ app: 'Zeitblick', version, herkunft, exportedAt: new Date().toISOString(), data: daten }), herkunft } });
+  const ein = C.emptyData();
+  for (const c of C.COLLECTIONS) ein[c] = (daten && daten[c]) || {};
+  const { merged } = C.mergeData(S.getData(), ein);
+  S.applyMerged(merged);
+  if (!S.local.umzugEinst && lokal) { for (const [k, v] of Object.entries(lokal)) if (LOKAL_UEBERNEHMEN.includes(k)) S.local[k] = v; S.local.umzugEinst = Date.now(); }
+  S.local.onboarded = true;
+  S.saveLocalNow();
+  await S.saveNow();
+  await SY.syncNow({ force: true });
+  return S.countData(ein);
+}
+
+/** Kern-Seite #/umzug: wartet auf die Daten der alten Adresse (oder nimmt eine Sicherungsdatei). */
 export function kernSeite(root) {
   if (!KR.aktiv) return false;
   const erlaubt = KR.umzugHerkunft();
   const zeige = (html) => { root.innerHTML = `<div class="page umzug"><div class="card umzug-karte"><div class="umzug-symbol">${icon('upload', 28)}</div>${html}</div></div>`; };
+  const fertig = (n) => {
+    zeige(`<h1>Umzug fertig</h1><p>Übernommen: ${esc(zaehlen(n))}.</p><p class="small muted">Gesichert wurde vorher automatisch. Die alte Adresse behält ihre Daten (Rückweg) und plant keine Erinnerungen mehr. Ab jetzt öffnest du Zeitblick über das Symbol neben der Uhr, die Taskleiste oder Strg+Alt+Z.</p><button class="btn btn-primary" data-umzugzu>Fertig</button>`);
+    root.querySelector('[data-umzugzu]').addEventListener('click', () => { if (window.opener) window.close(); setTimeout(() => { location.hash = '#/heute'; }, 200); });
+  };
+  const schief = (e) => zeige(`<h1>Umzug nicht geklappt</h1><p class="status-line err">${esc(e.message || String(e))}</p><p class="small muted">Es wurde nichts verändert, was verloren gehen könnte: Die alte Adresse hat alle Daten, und hier wurde vorher gesichert.</p><a class="btn" href="#/heute">Zu Zeitblick</a>`);
   if (!window.opener) {
-    zeige(`<h1>Umzug ans Laptop-Zuhause</h1><p>Öffne Zeitblick unter der alten Adresse (<span class="code">alex-froese.github.io/zeitblick</span>) und wähle dort <b>Einstellungen → Sync → Daten umziehen</b>. Dieses Fenster öffnet sich dann von selbst.</p><p class="small muted">Deine alten Daten bleiben dort unverändert stehen.</p><a class="btn btn-primary" href="#/heute">Zu Zeitblick</a>`);
+    // Ersatzweg, falls der Browser kein eigenes Fenster öffnet: Sicherungsdatei der alten Adresse einspielen.
+    zeige(`<h1>Umzug ans Laptop-Zuhause</h1><p>Öffne Zeitblick unter der alten Adresse (<span class="code">alex-froese.github.io/zeitblick</span>) und wähle dort <b>Daten umziehen</b> (Band oben oder Einstellungen → Sync). Dieses Fenster öffnet sich dann von selbst.</p>
+      <p class="small muted">Klappt das nicht: dort Einstellungen → Datensicherung → <b>Sicherung herunterladen</b> und die Datei hier einspielen.</p>
+      <div class="row wrap" style="justify-content:center"><button class="btn" data-umzugdatei>${icon('upload', 15)}Sicherungsdatei einspielen</button><a class="btn btn-primary" href="#/heute">Zu Zeitblick</a></div>`);
+    root.querySelector('[data-umzugdatei]').addEventListener('click', async () => {
+      const { pickFile } = await import('./ui.js');
+      const f = await pickFile('.json,application/json'); if (!f) return;
+      try {
+        const daten = S.parseImport(await f.text());
+        zeige(`<h1>Daten werden übernommen …</h1><p class="small muted">Einen Moment. Vorher wird der jetzige Stand gesichert.</p>`);
+        fertig(await uebernehmen(daten, { herkunft: 'datei:' + f.name }));
+      } catch (e) { schief(e); }
+    });
     return true;
   }
   zeige(`<h1>Daten werden übernommen …</h1><p class="small muted">Einen Moment. Vorher wird der jetzige Stand gesichert.</p>`);
@@ -73,20 +106,12 @@ export function kernSeite(root) {
     window.removeEventListener('message', an);
     const antwort = (x) => { try { ev.source.postMessage(x, ev.origin); } catch { } };
     try {
-      await KR.api('umzug', { method: 'POST', body: { text: JSON.stringify({ app: 'Zeitblick', version: m.version, herkunft: m.herkunft, exportedAt: new Date().toISOString(), data: m.daten }), herkunft: m.herkunft } });
-      const ein = C.emptyData();
-      for (const c of C.COLLECTIONS) ein[c] = (m.daten && m.daten[c]) || {};
-      const { merged } = C.mergeData(S.getData(), ein);
-      S.applyMerged(merged);
-      if (!S.local.umzugEinst && m.lokal) { for (const [k, v] of Object.entries(m.lokal)) S.local[k] = v; S.local.umzugEinst = Date.now(); S.local.onboarded = true; S.saveLocalNow(); }
-      await S.saveNow();
-      await SY.syncNow({ force: true });
-      antwort({ typ: 'zb-umzug-fertig', ok: true, anzahl: S.countData(ein) });
-      zeige(`<h1>Umzug fertig</h1><p>Übernommen: ${esc(zaehlen(ein))}.</p><p class="small muted">Gesichert wurde vorher automatisch. Die alte Adresse behält ihre Daten (Rückweg) und plant keine Erinnerungen mehr. Ab jetzt öffnest du Zeitblick über das Symbol neben der Uhr, die Taskleiste oder Strg+Alt+Z.</p><button class="btn btn-primary" data-umzugzu>Fertig</button>`);
-      root.querySelector('[data-umzugzu]').addEventListener('click', () => { window.close(); setTimeout(() => { location.hash = '#/heute'; }, 200); });
+      const n = await uebernehmen(m.daten, { lokal: m.lokal, herkunft: m.herkunft, version: m.version });
+      antwort({ typ: 'zb-umzug-fertig', ok: true, anzahl: n });
+      fertig(n);
     } catch (e) {
       antwort({ typ: 'zb-umzug-fehler', fehler: e.message || String(e) });
-      zeige(`<h1>Umzug nicht geklappt</h1><p class="status-line err">${esc(e.message || String(e))}</p><p class="small muted">Es wurde nichts verändert, was verloren gehen könnte: Die alte Adresse hat alle Daten, und hier wurde vorher gesichert.</p>`);
+      schief(e);
     }
   };
   window.addEventListener('message', an);

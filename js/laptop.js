@@ -117,6 +117,8 @@ export function starten() {
     SY.onState(st => { if (st.status === 'idle') statusBald(6000); });
     statusBald(2500);
     setInterval(() => statusBald(0), 10 * 60000);
+    // Geht das Fenster in den Hintergrund, drosselt der Browser Zeitgeber: dann den Stand sofort schicken.
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { clearTimeout(statusUhr); statusSenden(); } });
   }
 }
 
