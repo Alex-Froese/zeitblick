@@ -2,7 +2,7 @@
 #   Port 42488, Fenstertitel „TEST · Zeitblick“, eigener Taskleisten-Ausweis (Froese.Zeitblick.Test), kein Autostart.
 #   Daten, Test-Vault (Statusdatei, Spiegel) und die Gist-Attrappe liegen in %LOCALAPPDATA%\Froese\Zeitblick-Test\.
 #   Die App am Laptop: http://127.0.0.1:42488 · die App wie am Handy (ohne Kern): http://localhost:42488
-#   Kürzel: „Zeitblick zeigen“ ist aus (gehört dem echten Zeitblick), „Neuer Vorgang“ = Strg+Alt+A.
+#   Kürzel: „Zeitblick zeigen“ ist aus (gehört dem echten Zeitblick), „Neuer Vorgang“ = Strg+Alt+G.
 # Aufruf:  powershell -ExecutionPolicy Bypass -File werkzeuge\testinstanz.ps1             (starten, ohne Fenster)
 #          powershell -ExecutionPolicy Bypass -File werkzeuge\testinstanz.ps1 -MitFenster (starten und Fenster öffnen)
 #          powershell -ExecutionPolicy Bypass -File werkzeuge\testinstanz.ps1 -Beenden    (beenden)

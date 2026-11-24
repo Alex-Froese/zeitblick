@@ -65,6 +65,9 @@ namespace Froese.Zeitblick
             {
                 Oberflaeche.KuerzelSetzen(Json.Text(e, "kuerzel"));
                 Oberflaeche.VorgangKuerzelSetzen(Json.Text(e, "kuerzelVorgang"));
+                // Kein stilles Scheitern: Ist ein Kürzel belegt, sagt es der Kern sofort (und die App zeigt es beim Öffnen).
+                string f = (Oberflaeche.KuerzelFehler + " " + Oberflaeche.VorgangKuerzelFehler).Trim();
+                if (f.Length > 0) Oberflaeche.Hinweis(f + " Ändern unter Einstellungen → Laptop & Kern.");
             }
             AutostartAnwenden(e);
             Abgleich.Starten();
@@ -348,10 +351,11 @@ namespace Froese.Zeitblick
 
     class Infobereich : ApplicationContext
     {
-        /// <summary>Z wie Zeitblick, A wie Aufgabe/Anliegen: auf der deutschen Tastatur keine AltGr-Zeichen und von keinem
-        /// eigenen Programm belegt (C, K, N, P, W, L, R sind vergeben, siehe 01-systemlandschaft.md).</summary>
+        /// <summary>Z wie Zeitblick, G wie VorGang: auf der deutschen Tastatur keine AltGr-Zeichen, weit weg von Q, E und M
+        /// (kein Rutscher beim @) und von keinem eigenen Programm belegt (C, K, N, P, W, L, R sind vergeben, siehe 01-systemlandschaft.md).
+        /// Strg+Alt+A nie: In der Claude-App ist das „Chat archivieren“, und es liegt neben dem @ (Entscheidung 24.11.2026).</summary>
         public const string StandardKuerzel = "Strg+Alt+Z";
-        public const string StandardVorgangKuerzel = "Strg+Alt+A";
+        public const string StandardVorgangKuerzel = "Strg+Alt+G";
 
         readonly Kern kern;
         readonly NotifyIcon symbol;
@@ -456,12 +460,20 @@ namespace Froese.Zeitblick
 
         public object AufUiThread(Func<object> f) { return empfaenger.Invoke(f); }
 
+        /// <summary>Sichtbarer Hinweis neben der Uhr (z. B. Kürzel belegt).</summary>
+        public void Hinweis(string text)
+        {
+            try { AufUiThread(delegate { symbol.ShowBalloonTip(10000, kern.Starter.Praefix + "Zeitblick", text.Length > 250 ? text.Substring(0, 250) : text, ToolTipIcon.Warning); return null; }); }
+            catch { }
+        }
+
         string Anmelden(int id, string kombination)
         {
             UnregisterHotKey(empfaenger.Handle, id);
             if (kombination == "aus") return "";
             uint mod, vk;
             if (!KombinationLesen(kombination, out mod, out vk)) return "Unbekannte Tastenkombination: " + kombination;
+            if (mod == 0x3 && vk == 'A') return "Strg+Alt+A wird nicht angemeldet (in der Claude-App „Chat archivieren“, dazu neben dem @). Bitte eine andere Kombination, z. B. " + StandardVorgangKuerzel + ".";
             string anderes = id == KuerzelId ? VorgangKuerzel : Kuerzel;
             if (string.Equals(anderes, kombination, StringComparison.OrdinalIgnoreCase)) return kombination + " ist schon das andere Zeitblick-Kürzel.";
             if (!RegisterHotKey(empfaenger.Handle, id, mod | 0x4000, vk)) return kombination + " ist schon von einem anderen Programm belegt.";
@@ -492,7 +504,9 @@ namespace Froese.Zeitblick
         {
             return (bool)AufUiThread(delegate
             {
-                if (string.IsNullOrEmpty(kombination)) kombination = StandardVorgangKuerzel;
+                // Leer = Standard. Ein gespeichertes Strg+Alt+A (alter Standard aus dem Test) wird zum neuen Standard.
+                uint m0, v0;
+                if (string.IsNullOrEmpty(kombination) || (KombinationLesen(kombination, out m0, out v0) && m0 == 0x3 && v0 == 'A')) kombination = StandardVorgangKuerzel;
                 VorgangKuerzel = kombination;
                 VorgangKuerzelFehler = Anmelden(VorgangKuerzelId, kombination);
                 return VorgangKuerzelFehler.Length == 0;

@@ -172,7 +172,7 @@ namespace Froese.Zeitblick
                 Dictionary<string, object> e = Json.Kopie(einstellungen);
                 Dictionary<string, object> std = new Dictionary<string, object>();
                 std["kuerzel"] = "";          // "" = Standard (Strg+Alt+Z), "aus" = keins
-                std["kuerzelVorgang"] = "";   // "" = Standard (Strg+Alt+A)
+                std["kuerzelVorgang"] = "";   // "" = Standard (Strg+Alt+G)
                 std["autostart"] = true;
                 std["vault"] = @"C:\Obsidian\System";
                 std["spiegel"] = true;

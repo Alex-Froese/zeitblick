@@ -213,6 +213,11 @@ $ei = (Anfrage GET '/api/einstellungen').Json
 Pruefe 'Einstellungen: Testinstanz ohne Autostart' ($ei.zustand.test -eq $true -and $ei.zustand.autostartAktiv -eq $false)
 $ei2 = (Anfrage PUT '/api/einstellungen' @{ vault = 'C:\Windows' }).Json
 Pruefe 'Testinstanz lässt den Vault nicht umstellen' ($ei2.vault -ne 'C:\Windows')
+$ka = (Anfrage PUT '/api/einstellungen' @{ kuerzel = 'Strg+Alt+A'; kuerzelVorgang = 'Strg+Alt+A' }).Json.zustand
+Pruefe 'Strg+Alt+A wird nie angemeldet, mit Hinweis' ($ka.kuerzelFehler -like '*Strg+Alt+A wird nicht angemeldet*')
+Pruefe 'altes Strg+Alt+A für Neuer Vorgang wird Strg+Alt+G' ($ka.kuerzelVorgang -eq 'Strg+Alt+G')
+$kn = (Anfrage PUT '/api/einstellungen' @{ kuerzel = ''; kuerzelVorgang = '' }).Json.zustand
+Pruefe 'Standard: Neuer Vorgang = Strg+Alt+G, Zeigen in der Testinstanz aus' ($kn.kuerzelVorgang -eq 'Strg+Alt+G' -and $kn.kuerzel -eq 'aus')
 $info = (Anfrage GET '/api/info').Json
 Pruefe 'Info zeigt Testordner' ($info.daten -like "*Zeitblick-Test*" -and $info.statusdatei -like "*Zeitblick-Test*" -and $info.appId -eq 'Froese.Zeitblick.Test')
 

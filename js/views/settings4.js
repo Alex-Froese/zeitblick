@@ -70,7 +70,7 @@ function laptopHtml(e, info) {
   const kz = (art, wert, fehler, std) => `<div class="optrow"><div class="grow"><b>${art}</b><span>${fehler ? `<span style="color:var(--bad)">${esc(fehler)}</span>` : `Von überall in Windows. Standard ${std}, „aus“ schaltet ab.`}</span></div><input class="input" data-s4k="${art === 'Zeitblick zeigen' ? 'kuerzel' : 'kuerzelVorgang'}" value="${esc(wert || '')}" placeholder="${std}" style="width:9.5rem"><button class="btn sm" data-a4="kuerzel">Übernehmen</button></div>`;
   const sw = (k, an, titel, hint) => `<div class="optrow"><div class="grow"><b>${titel}</b><span>${hint}</span></div><label class="switch"><input type="checkbox" data-s4set="${k}" ${an ? 'checked' : ''}><span class="tr"></span></label></div>`;
   return `${kz('Zeitblick zeigen', z.kuerzel, z.kuerzelFehler, 'Strg+Alt+Z')}
-    ${kz('Neuer Vorgang', z.kuerzelVorgang, z.kuerzelVorgangFehler, 'Strg+Alt+A')}
+    ${kz('Neuer Vorgang', z.kuerzelVorgang, z.kuerzelVorgangFehler, 'Strg+Alt+G')}
     ${z.test ? '<div class="status-line">Testinstanz: kein Autostart, Spiegel und Statusdatei nur im Testordner.</div>' : sw('autostart', e.autostart !== false, 'Mit Windows starten', z.autostartAktiv ? 'Startet still im Infobereich (neben der Uhr).' : 'Aus: Zeitblick startet erst, wenn du es öffnest.')}
     ${sw('spiegel', e.spiegel !== false, 'Markdown-Spiegel im Vault', `Reiner Inhalt als Markdown nach <span class="code">${esc(info.spiegel || '')}</span>, damit Klarblick ihn findet.`)}
     ${sw('status', e.status !== false, 'Statusdatei für Launcher und Weitblick', `Nur Zahlen („Heute: 3 von 8 erledigt“) nach <span class="code">${esc(info.statusdatei || '')}</span>.`)}

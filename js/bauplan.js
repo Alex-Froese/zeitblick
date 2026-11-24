@@ -7,7 +7,7 @@ export const VERSIONS = [
       'Die Daten wohnen am Laptop als Dateien in deinem Benutzerordner (nicht mehr nur im Browser), mit Sicherung etwa eine Minute nach jeder Änderung (die letzten 100)',
       'Sync verschlüsselt (AES-256 + HMAC): neuer, privater Speicher, Schlüssel nur auf deinen Geräten, Wiederherstellungs-Schlüssel zum Aufschreiben, Handy per QR-Code. Der alte Speicher bleibt unverändert',
       'Kundenblick gleicht direkt mit dem Kern ab statt über GitHub',
-      'Kürzel von überall: Strg+Alt+Z zeigt Zeitblick, Strg+Alt+A öffnet „Neuer Vorgang“ als kleines eigenes Fenster. Rechtsklick in der Taskleiste: „Neues Fenster“, „Neuer Vorgang“',
+      'Kürzel von überall: Strg+Alt+Z zeigt Zeitblick, Strg+Alt+G öffnet „Neuer Vorgang“ als kleines eigenes Fenster. Rechtsklick in der Taskleiste: „Neues Fenster“, „Neuer Vorgang“',
       'Fenster-Regel: Fenster schließen nur über ✕ oder Esc, nie beim Klick daneben oder beim Programmwechsel. Neue Vorgänge sind ab dem ersten Buchstaben als Entwurf gesichert, warten als Karte unten rechts und lassen sich als eigenes Fenster öffnen',
       'Rechtsklick auf einen Vorgang: „In neuem Fenster öffnen“',
       'Statusdatei für Launcher und Weitblick (nur Zahlen) und Markdown-Spiegel in den Vault schreibt jetzt der Kern',

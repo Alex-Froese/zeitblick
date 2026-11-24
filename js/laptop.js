@@ -100,7 +100,7 @@ export function willkommen() {
   sheet({
     title: 'Zeitblick wohnt jetzt am Laptop', cls: 'sheet-sm',
     body: `<p class="confirm-text">Ab Zeitblick 4 hat die Lebenszentrale am Laptop ein eigenes Programm: Die Daten liegen als Dateien bei dir, werden automatisch gesichert und verschlüsselt mit dem Handy abgeglichen.</p>
-      <ul class="small" style="padding-left:18px;color:var(--ink-2);line-height:1.8;margin:8px 0 12px"><li>Hast du Zeitblick schon unter <span class="code">alex-froese.github.io</span> benutzt? Öffne es dort einmal und klick auf <b>Daten umziehen</b>.</li><li>Öffnen: Symbol neben der Uhr, Taskleiste oder <b>Strg+Alt+Z</b>. Neuer Vorgang von überall: <b>Strg+Alt+A</b>.</li></ul>`,
+      <ul class="small" style="padding-left:18px;color:var(--ink-2);line-height:1.8;margin:8px 0 12px"><li>Hast du Zeitblick schon unter <span class="code">alex-froese.github.io</span> benutzt? Öffne es dort einmal und klick auf <b>Daten umziehen</b>.</li><li>Öffnen: Symbol neben der Uhr, Taskleiste oder <b>Strg+Alt+Z</b>. Neuer Vorgang von überall: <b>Strg+Alt+G</b>.</li></ul>`,
     footer: `<button class="btn" data-w="leer">Leer starten</button><a class="btn btn-primary" href="https://alex-froese.github.io/zeitblick/" target="_blank" rel="noopener" data-w="alt">Alte Adresse öffnen</a>`,
     onMount: (el, close) => el.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if (!b) return; S.local.onboarded = true; S.saveLocal(); close(); }),
     onClose: () => { S.local.onboarded = true; S.saveLocal(); },
@@ -117,6 +117,14 @@ export function starten() {
     SY.onState(st => { if (st.status === 'idle') statusBald(6000); });
     statusBald(2500);
     setInterval(() => statusBald(0), 10 * 60000);
+    // Kein stilles Scheitern: Konnte der Kern ein Kürzel nicht anmelden (belegt), sagt es die App beim Öffnen.
+    setTimeout(async () => {
+      try {
+        const z = (await KR.api('einstellungen')).zustand || {};
+        const f = [z.kuerzelFehler, z.kuerzelVorgangFehler].filter(Boolean).join(' ');
+        if (f) toast(esc(f), { kind: 'bad', ms: 12000, action: 'Ändern', onAction: () => A.nav('#/einstellungen/laptop') });
+      } catch { /* Kern kurz weg */ }
+    }, 1500);
     // Geht das Fenster in den Hintergrund, drosselt der Browser Zeitgeber: dann den Stand sofort schicken.
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { clearTimeout(statusUhr); statusSenden(); } });
   }
