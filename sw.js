@@ -1,5 +1,5 @@
 // Zeitblick – Service Worker: Offline-Betrieb und Klicks auf Benachrichtigungen
-const VERSION = 'zb-v4.0.0';
+const VERSION = 'zb-v4.0.1';
 const SHELL = [
   './', './index.html', './fenster.html', './manifest.webmanifest', './css/app.css', './vendor/qrcode.js',
   './js/kern.js', './js/krypto.js', './js/entwuerfe.js', './js/dock.js', './js/umzug.js', './js/laptop.js', './js/views/settings4.js',

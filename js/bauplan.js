@@ -1,6 +1,10 @@
 // Bauplan und Versionsverlauf – im Programm (Einstellungen → Info), je Version aktualisiert
 export const VERSIONS = [
   {
+    v: '4.0.1', date: '2026-11-25', title: 'Reparatur: QR-Code „Handy verbinden“',
+    items: ['Der QR-Code zum Verbinden des Handys wird wieder in voller Größe gezeigt (vorher nur ein leerer weißer Rahmen)'],
+  },
+  {
     v: '4.0.0', date: '2026-11-23', title: 'Zeitblick 4 · Teil 0: Fundament',
     items: [
       'Zeitblick-Kern am Laptop (Zeitblick.exe): lebt im Infobereich, startet mit Windows, eigenes Symbol in der Taskleiste, einzeln anheftbar',

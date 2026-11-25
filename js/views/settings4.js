@@ -162,7 +162,7 @@ async function koppelnZeigen() {
   sheet({
     title: 'Handy verbinden', cls: 'sheet-sm',
     body: `<p class="small">Am Handy die Kamera auf den Code halten und den Link öffnen. Darin stecken Zugang und Schlüssel: Das Handy gleicht danach <b>verschlüsselt</b> ab.</p>
-      <div class="qr-box" style="max-width:260px;margin:12px auto">${qrSvg(url)}</div>
+      <div style="text-align:center;margin:12px 0"><div class="qr-box qr-gross">${qrSvg(url)}</div></div>
       <p class="tiny muted">Den Code wie ein Passwort behandeln: nicht fotografieren, nicht weitergeben. Schließe dieses Fenster, wenn das Handy verbunden ist.</p>`,
     footer: '<button class="btn btn-primary" data-close>Fertig</button>',
   });

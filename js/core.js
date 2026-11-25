@@ -1,7 +1,7 @@
 // Zeitblick – Kernlogik (läuft im Browser und in Node für die GitHub Action)
 // Keine DOM-Abhängigkeiten in dieser Datei.
 
-export const APP_VERSION = '4.0.0';
+export const APP_VERSION = '4.0.1';
 export const DATA_VERSION = 4;
 export const COLLECTIONS = ['tasks', 'events', 'cats', 'focus', 'meta', 'inbox', 'notes', 'habits', 'goals', 'projects', 'people', 'life', 'reviews', 'templates'];
 
