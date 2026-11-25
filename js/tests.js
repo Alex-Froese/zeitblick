@@ -68,6 +68,8 @@ async function mergeParitaet() {
     [{ a: { id: 'a', deleted: true, updatedAt: jetzt - 1000 } }, { a: { id: 'a', t: 'alt', updatedAt: jetzt - 5000 } }],
     [{}, { b: { id: 'b', t: 'neu', updatedAt: 3 } }],
     [{ c: { id: 'c', t: 'ä „ö“ \\ " \n', n: 1.5, updatedAt: 3 } }, { c: { id: 'c', t: 'ä „ö“ \\ " \n', n: 1.5, updatedAt: 3 } }],
+    [{ v: { id: 'v', t: 'Vorgabe neues Handy', updatedAt: 1 } }, { v: { id: 'v', t: 'echt vom Laptop', updatedAt: jetzt - 86400000 } }],   // 4.0.2
+    [{ v: { id: 'v', t: 'echt vom Laptop', updatedAt: jetzt - 86400000 } }, { v: { id: 'v', t: 'Vorgabe neues Handy', updatedAt: 1 } }],
   ];
   let gleich = 0;
   for (const [L, R] of faelle) {
@@ -79,6 +81,9 @@ async function mergeParitaet() {
     if (same) gleich++; else console.warn('Abweichung', L, R, js, k);
   }
   pruefe(`Zusammenführung App = Kern (${gleich}/${faelle.length} Fälle)`, gleich === faelle.length);
+  const v1 = C.mergeData({ tasks: faelle[8][0] }, { tasks: faelle[8][1] }, jetzt).merged.tasks.v;
+  const v2 = C.mergeData({ tasks: faelle[9][0] }, { tasks: faelle[9][1] }, jetzt).merged.tasks.v;
+  pruefe('Vorgabe eines neuen Geräts verliert gegen die echte Fassung (beide Richtungen)', v1.t === 'echt vom Laptop' && v2.t === 'echt vom Laptop', JSON.stringify([v1, v2]));
 }
 
 function anwenden(d) {

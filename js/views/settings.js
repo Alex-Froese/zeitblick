@@ -211,7 +211,8 @@ export function render(route) {
   const topic = s.ntfy.topic;
   const server = NT.cleanServer(s.ntfy.server);
   const appUrl = N.appUrl();
-  const sec = SEC_ALIAS[route.parts[0]] || route.parts[0] || 'einrichtung';
+  const handy = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+  const sec =SEC_ALIAS[route.parts[0]] || route.parts[0] || 'einrichtung';
     const counts = S.countData(S.getData());
   const remChips = (path, sel, opts) => `<div class="rem-pick" data-rempath="${path}">${opts.map(([m, l]) => `<button type="button" class="chip ${sel.includes(m) ? 'on' : ''}" data-remv="${m}">${l}</button>`).join('')}</div>`;
   const TR = [[0, 'Bei Fälligkeit'], [15, '15 Min'], [60, '1 Std'], [180, '3 Std'], [1440, '1 Tag'], [2880, '2 Tage']];
@@ -264,14 +265,16 @@ export function render(route) {
         <div class="field" style="margin-top:10px"><label for="s-topic">Dein persönlicher Kanal</label><div class="row"><input id="s-topic" class="input" data-settext="ntfy.topic" value="${esc(topic)}" placeholder="wird erzeugt"><button class="btn sm" data-act="newtopic">Neu erzeugen</button></div><span class="hint">Der Kanalname ist wie ein Passwort: Wer ihn kennt, kann mitlesen. Er wird lang und zufällig erzeugt.</span></div>
         <div class="field"><label for="s-server">Server</label><input id="s-server" class="input" data-settext="ntfy.server" value="${esc(s.ntfy.server)}"></div>
         ${topic ? `<div class="row wrap" style="gap:18px;align-items:flex-start">
-          <div class="qr-box" style="width:150px">${qrSvg(`${server}/${topic}`)}</div>
+          ${handy ? '' : `<div class="qr-box" style="width:150px">${qrSvg(N.HANDY_URL + '#/einstellungen/push')}</div>`}
           <ol class="steps" style="flex:1;min-width:220px">
             <li>App „ntfy“ aus dem Play Store bzw. App Store installieren.</li>
-            <li>In ntfy auf „+“ tippen und den Kanal <span class="code">${esc(topic)}</span> abonnieren (Server: ${esc(server.replace('https://', ''))}). Oder diesen QR-Code mit der Kamera scannen.</li>
+            ${handy
+              ? `<li>Den Kanal <b>in der ntfy-App</b> abonnieren, nicht im Browser: <div class="row wrap" style="margin-top:6px"><a class="btn sm btn-primary" href="ntfy://${esc(server.replace(/^https?:\/\//, ''))}/${esc(topic)}">In der ntfy-App abonnieren</a><button class="btn sm" data-act="copytopic">Kanal kopieren</button></div><span class="hint">Klappt der erste Knopf nicht: „Kanal kopieren“, in ntfy auf „+“ tippen und einfügen (Server: ${esc(server.replace('https://', ''))}).</span></li>`
+              : `<li>Den QR-Code mit dem Handy scannen: Zeitblick öffnet sich dort an dieser Stelle, dann „In der ntfy-App abonnieren“ tippen. Oder in ntfy auf „+“ tippen und den Kanal <span class="code">${esc(topic)}</span> eintragen (Server: ${esc(server.replace('https://', ''))}).</li>`}
             <li>In ntfy beim Kanal Benachrichtigungen auf „Max. Priorität: Dauerhaft alarmieren“ stellen, wenn Alarm-Tickets nicht zu überhören sein sollen.</li>
             <li><button class="btn sm" data-act="testntfy">Test-Push senden</button></li>
           </ol></div>` : ''}
-        <div class="field" style="margin-top:6px"><label for="s-appurl">Adresse der App (für Deep Links)</label><input id="s-appurl" class="input" data-settext="appUrl" value="${esc(s.appUrl || '')}" placeholder="${esc(N.baseUrl())}"><span class="hint">Tippst du auf eine Benachrichtigung, öffnet sich diese Adresse direkt an der richtigen Stelle. Leer lassen = aktuelle Adresse (${esc(N.baseUrl())}).</span></div>
+        <div class="field" style="margin-top:6px"><label for="s-appurl">Adresse der App (für Deep Links)</label><input id="s-appurl" class="input" data-settext="appUrl" value="${esc(s.appUrl || '')}" placeholder="${esc(N.pushUrl())}"><span class="hint">Tippst du am Handy auf eine Benachrichtigung, öffnet sich diese Adresse direkt an der richtigen Stelle. Leer lassen = ${esc(N.pushUrl())}.</span></div>
       </section>
 
       ${S4.syncSection()}
@@ -439,9 +442,10 @@ export function mount(root, ctx, route) {
       toast(ok ? 'Test-Benachrichtigung gesendet' : 'Benachrichtigungen sind auf diesem Gerät nicht erlaubt', { kind: ok ? '' : 'bad' });
     }
     if (a === 'newtopic') { S.setSettingPath('ntfy.topic', NT.randomTopic()); toast('Neuer Kanal erzeugt – in der ntfy-App neu abonnieren'); }
+    if (a === 'copytopic') { toast(await copyText(S.settings().ntfy.topic) ? 'Kanal kopiert – in ntfy auf „+“ tippen und einfügen' : 'Kopieren nicht möglich'); }
     if (a === 'testntfy') {
       const s = S.settings();
-      try { await NT.sendTest(s.ntfy.server, s.ntfy.topic, N.appUrl()); toast('Test-Push gesendet – schau aufs Handy'); }
+      try { await NT.sendTest(s.ntfy.server, s.ntfy.topic, N.pushUrl()); toast('Test-Push gesendet – schau aufs Handy'); }
       catch (err) { toast('Push fehlgeschlagen: ' + esc(err.message), { kind: 'bad', ms: 7000 }); }
     }
     if (a === 'connect') {

@@ -189,7 +189,10 @@ export function put(col, rec, opts = {}) {
   if (!rec.id) rec.id = C.uid(col.slice(0, 1));
   const prev = data[col][rec.id];
   if (!prev && !rec.createdAt && col !== 'meta') rec.createdAt = Date.now();
-  stamp(rec, prev);
+  // Vorgaben (Beispiel-Vorlagen, Grund-Einstellungen) bekommen den ältesten Zeitstempel. So gewinnt beim Abgleich immer
+  // die echte Fassung von einem anderen Gerät, und ein neues Handy überschreibt nichts mit seinen Vorgaben.
+  if (opts.vorgabe && !prev) { rec.updatedAt = 1; rec.dev = local.deviceId; }
+  else stamp(rec, prev);
   data[col][rec.id] = rec;
   dirty = true;
   scheduleSave();
@@ -256,13 +259,13 @@ export function saveSettings(patch) {
   for (const k of Object.keys(patch)) if (Array.isArray(patch[k])) v[k] = patch[k];
   put('meta', { id: 'settings', v });
 }
-export function setSettingPath(path, value) {
+export function setSettingPath(path, value, opts = {}) {
   const cur = C.structuredCloneSafe((data.meta.settings && !data.meta.settings.deleted && data.meta.settings.v) || {});
   const parts = path.split('.');
   let o = cur;
   for (let i = 0; i < parts.length - 1; i++) { if (typeof o[parts[i]] !== 'object' || o[parts[i]] === null) o[parts[i]] = {}; o = o[parts[i]]; }
   o[parts[parts.length - 1]] = value;
-  put('meta', { id: 'settings', v: cur });
+  put('meta', { id: 'settings', v: cur }, opts);
 }
 
 export function cats(area) {
@@ -287,7 +290,7 @@ export const templates = f => live('templates', f).sort((a, b) => (a.order ?? 99
 export function review(type, key) { return live('reviews', x => x.type === type && x.key === key)[0] || null; }
 /** Gespeicherte Ansichten der Vorgänge (geräteübergreifend) */
 export function vgViews() { const m = data.meta.vgViews; return m && !m.deleted && Array.isArray(m.list) ? m.list : []; }
-export function setVgViews(list) { put('meta', { id: 'vgViews', list }); }
+export function setVgViews(list, opts = {}) { put('meta', { id: 'vgViews', list }, opts); }
 /** Persönliche Anleitung „Mein System“ */
 export function myGuide() { const m = data.meta.myGuide; return m && !m.deleted && Array.isArray(m.list) ? m.list : null; }
 export function setMyGuide(list) { put('meta', { id: 'myGuide', list }); }

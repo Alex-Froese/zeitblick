@@ -1,6 +1,14 @@
 // Bauplan und Versionsverlauf – im Programm (Einstellungen → Info), je Version aktualisiert
 export const VERSIONS = [
   {
+    v: '4.0.2', date: '2026-11-25', title: 'Reparatur: Handy-Push über ntfy',
+    items: [
+      'Tippen auf eine Push-Nachricht öffnet Zeitblick am Handy. Vorher zeigten die Links, die der Laptop plant, auf den Laptop selbst (127.0.0.1) und das Handy meldete „Website nicht erreichbar“',
+      'Am Handy unter Einstellungen → Geräte & Handy-Push: Knopf „In der ntfy-App abonnieren“ und „Kanal kopieren“. Der QR-Code am Laptop öffnet diese Stelle am Handy, statt die ntfy-Webseite',
+      'Ein neu verbundenes Gerät überschreibt beim ersten Abgleich nichts mehr mit seinen Vorgaben (Beispiel-Vorlagen, Kalender-Regeln, Ansichten): Vorgaben zählen immer als älteste Fassung',
+    ],
+  },
+  {
     v: '4.0.1', date: '2026-11-25', title: 'Reparatur: QR-Code „Handy verbinden“',
     items: ['Der QR-Code zum Verbinden des Handys wird wieder in voller Größe gezeigt (vorher nur ein leerer weißer Rahmen)'],
   },

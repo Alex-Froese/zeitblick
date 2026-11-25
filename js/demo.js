@@ -173,13 +173,17 @@ export function exampleTemplates() {
 
 /** Einmalig: Beispiel-Vorlagen, Regeln (A/B aus, Ferien BW) und Beispiel-Ansichten für Vorgänge */
 export async function seedTemplates() {
+  const { BW_HOLIDAYS } = await import('./views/calendar-tpl.js');
+  const { DEFAULT_VIEWS } = await import('./views/vorgaenge.js');
+  // Ab hier ohne await: Bringt ein Abgleich (z. B. beim Verbinden eines neuen Handys) gerade die echten Daten,
+  // wird nichts mit veralteten Werten überschrieben. Alles hier sind Vorgaben mit dem ältesten Zeitstempel.
   const d = S.getData();
   if (d.meta && d.meta.seed3 && !d.meta.seed3.deleted) return;
-  for (const t of exampleTemplates()) if (!d.templates[t.id]) S.put('templates', t, { silent: true });
+  const v = { vorgabe: true };
+  for (const t of exampleTemplates()) if (!d.templates[t.id]) S.put('templates', t, { silent: true, ...v });
   const cal = S.settings().cal || {};
-  const { BW_HOLIDAYS } = await import('./views/calendar-tpl.js');
   const patch = { ...cal, ab: { on: false, anchor: '', ...(cal.ab || {}), a: (cal.ab && cal.ab.a) || 'tpl-a', b: (cal.ab && cal.ab.b) || 'tpl-b' }, holidayTpl: cal.holidayTpl || 'tpl-f', holidays: (cal.holidays && cal.holidays.length) ? cal.holidays : BW_HOLIDAYS.map(h => ({ ...h })) };
-  S.setSettingPath('cal', patch);
-  if (!S.vgViews().length) { const { DEFAULT_VIEWS } = await import('./views/vorgaenge.js'); S.setVgViews(DEFAULT_VIEWS); }
-  S.put('meta', { id: 'seed3', at: Date.now() });
+  S.setSettingPath('cal', patch, v);
+  if (!S.vgViews().length) S.setVgViews(DEFAULT_VIEWS, v);
+  S.put('meta', { id: 'seed3', at: Date.now() }, v);
 }

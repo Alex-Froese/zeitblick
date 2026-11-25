@@ -870,7 +870,7 @@ input[type="color"] { width: 2.125rem; height: 2.125rem; border: 1px solid var(-
   .qcard .btn-now span { display: none; }
   .matrix.stackm { grid-template-columns: minmax(0, 1fr); }
   .orb-zone { min-height: 21.25rem; padding: 0.5rem; }
-  .set-grid { grid-template-columns: 1fr; }
+  .set-grid { grid-template-columns: minmax(0, 1fr); }
   .set-nav { position: static; flex-direction: row; overflow-x: auto; gap: 0.25rem; padding-bottom: 0.25rem; }
   .set-nav a { white-space: nowrap; background: var(--surface); }
   .fgrid { grid-template-columns: 1fr 1fr; }

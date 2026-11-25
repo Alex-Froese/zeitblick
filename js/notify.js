@@ -22,6 +22,16 @@ export function appUrl() {
   const s = S.settings();
   return s.appUrl || baseUrl();
 }
+/** Adresse der App am Handy (GitHub Pages). */
+export const HANDY_URL = 'https://alex-froese.github.io/zeitblick/';
+/** Ziel für Links in Push-Nachrichten. Am Laptop liefert der Kern die App unter 127.0.0.1 aus, und diese Adresse
+ *  erreicht das Handy nicht. Deshalb gilt die eigene Adresse aus den Einstellungen, sonst die Handy-Adresse. */
+export function pushUrl() {
+  const s = S.settings();
+  if (s.appUrl) return s.appUrl;
+  const b = baseUrl();
+  return /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?\//.test(b) ? HANDY_URL : b;
+}
 
 /* ---------------- Benachrichtigungszentrale (persistent bis manuell entfernt) ---------------- */
 export function messages() { return S.local.inbox || []; }
@@ -165,7 +175,7 @@ export async function runReconcile() {
   const map = loadRemoved();
   const removed = new Set(map.keys());
   try {
-    const r = await N.reconcile(S.getData(), { server: s.ntfy.server, topic: s.ntfy.topic, appUrl: appUrl(), removed });
+    const r = await N.reconcile(S.getData(), { server: s.ntfy.server, topic: s.ntfy.topic, appUrl: pushUrl(), removed });
     saveRemoved(removed, map);
     nstate.ntfy = { status: r.failed ? 'error' : 'ok', last: Date.now(), scheduled: r.scheduled, published: r.published, pending: r.pending, error: r.failed ? r.lastError : '' };
     if (r.pending > 0) setTimeout(() => scheduleReconcile(1000), 60000);
