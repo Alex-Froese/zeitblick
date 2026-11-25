@@ -74,9 +74,9 @@ Einfach alle Dateien im Repository ersetzen (siehe „Updates“ unten). Beim er
 
 1. App **ntfy** aus dem Play Store oder App Store installieren.
 2. In Zeitblick **Einstellungen → Benachrichtigungen → Handy-Push aktiv** einschalten.
-3. In ntfy auf **+** tippen und den angezeigten Kanal abonnieren (oder QR-Code scannen).
+3. Am Handy in Zeitblick unter **Einstellungen → Geräte & Handy-Push** auf **In der ntfy-App abonnieren** tippen. Am Laptop führt der QR-Code dorthin. Wichtig ist die ntfy-**App**, nicht die ntfy-Webseite im Browser.
 4. **Test-Push senden** drücken.
-5. Für Alarm-Vorgänge in den ntfy-Einstellungen **„Bei höchster Priorität dauerhaft alarmieren“** (engl. *Keep alerting for highest priority*) einschalten.
+5. Ton folgt dem Handy: Zeitblick schickt höchstens **hohe Priorität**. Bei Ton an kommen Pushs deutlich mit Ton und Vorschau, bei Ton aus still. In ntfy **nicht** „Dauerhaft alarmieren“ (*Keep alerting for highest priority*) und nicht „Nicht stören überschreiben“ einschalten.
 
 Push gibt es für: fällige und überfällige Vorgänge (mit Eskalation), Termine, Notizen zum Einprägen, Gewohnheiten mit Uhrzeit, zu lange liegende Inbox-Einträge und Geburtstage. Jede Nachricht öffnet per Tipp direkt die richtige Stelle. Ist etwas erledigt oder gelesen, verschwindet die Nachricht wieder vom Handy.
 

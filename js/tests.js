@@ -2,6 +2,7 @@
 import * as C from './core.js';
 import * as Z from './krypto.js';
 import * as E from './entwuerfe.js';
+import * as NT from './ntfy.js';
 import { sheet, closeAllSheets, topSheet } from './ui.js';
 
 const liste = [];
@@ -83,6 +84,13 @@ async function mergeParitaet() {
   pruefe(`Zusammenführung App = Kern (${gleich}/${faelle.length} Fälle)`, gleich === faelle.length);
   const v1 = C.mergeData({ tasks: faelle[8][0] }, { tasks: faelle[8][1] }, jetzt).merged.tasks.v;
   const v2 = C.mergeData({ tasks: faelle[9][0] }, { tasks: faelle[9][1] }, jetzt).merged.tasks.v;
+  // Regel C10 (4.0.3): nie Priorität 5 an ntfy, auch nicht für Alarm-Eskalationen und den Test-Push
+  const gesendet = [];
+  const fakeFetch = async (url, o) => { gesendet.push(JSON.parse(o.body)); return { ok: true, text: async () => '' }; };
+  await NT.publish('https://ntfy.sh', 'test', { rid: 'zb-t-x-e1-2611251900', at: jetzt, title: 'A', message: 'B', priority: 5, tags: ['rotating_light'] }, fakeFetch, jetzt);
+  await NT.publish('https://ntfy.sh', 'test', { rid: 'zb-t-x-r0-2611251900', at: jetzt, title: 'A', message: 'B', priority: 3 }, fakeFetch, jetzt);
+  await NT.sendTest('https://ntfy.sh', 'test', 'https://alex-froese.github.io/zeitblick/', fakeFetch);
+  pruefe('ntfy: höchstens Priorität 4 (Alarm 5 → 4, normal 3 bleibt 3, Test 4)', gesendet.map(b => b.priority).join(',') === '4,3,4', gesendet.map(b => b.priority).join(','));
   pruefe('Vorgabe eines neuen Geräts verliert gegen die echte Fassung (beide Richtungen)', v1.t === 'echt vom Laptop' && v2.t === 'echt vom Laptop', JSON.stringify([v1, v2]));
 }
 

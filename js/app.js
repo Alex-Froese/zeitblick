@@ -7,7 +7,7 @@ import * as O from './obsidian.js';
 import * as F from './focus-engine.js';
 import * as K from './actions.js';
 import { esc, icon, toast, sheet, popover, closePopover, topSheet, closeAllSheets, initTooltips, burst, isMobile, confirmDialog, setConfirmSec } from './ui.js';
-import { chime, vibrate } from './audio.js';
+import { chime, vibrate, amHandy } from './audio.js';
 import { A } from './app-api.js';
 import { openEventEditor, placeThumb } from './editors.js';
 import { openVorgang } from './detail.js';
@@ -599,8 +599,9 @@ function showAlarm(list) {
       <div class="acts"><button class="btn sm btn-danger" data-al="focus">${icon('play', 12)}Jetzt erledigen</button><button class="btn sm" data-al="done">${icon('check', 13)}Erledigt</button><button class="btn sm" data-al="tomorrow">Auf morgen</button><button class="btn sm btn-ghost" data-al="snooze">1 Std später</button></div></div>`; }).join('')}
     <div class="row" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-al="ack">Ich kümmere mich gleich</button></div></div>`;
   document.body.appendChild(alarmEl);
-  if (S.local.sound) chime('alert');
-  vibrate([300, 120, 300]);
+  // Am Handy kein eigener Ton und kein Vibrieren: Die App spielt über die Medien-Lautstärke und kennt den Ton-Schalter
+  // nicht. Laut wird es dort nur über ntfy, und das folgt dem Ton-Schalter (Regel C10).
+  if (!amHandy()) { if (S.local.sound) chime('alert'); vibrate([300, 120, 300]); }
   alarmEl.addEventListener('click', async e => {
     const b = e.target.closest('[data-al]'); if (!b) return;
     const a = b.dataset.al;
@@ -751,7 +752,7 @@ async function boot() {
   });
   N.setHooks({
     onFire: r => {
-      if (S.local.sound) chime(r.priority >= 5 ? 'alert' : 'soft');
+      if (S.local.sound && !amHandy()) chime(r.priority >= 5 ? 'alert' : 'soft');
       toast(esc(r.title), { action: r.ref && r.ref.type !== 'focus' ? 'Öffnen' : undefined, onAction: () => openRef(r.ref), ms: 8000, kind: r.priority >= 5 ? 'bad' : '' });
       updateShell(parseRoute());
     },

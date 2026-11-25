@@ -1,6 +1,14 @@
 // Bauplan und Versionsverlauf – im Programm (Einstellungen → Info), je Version aktualisiert
 export const VERSIONS = [
   {
+    v: '4.0.3', date: '2026-11-25', title: 'Pushs folgen dem Ton-Schalter des Handys',
+    items: [
+      'Push-Nachrichten gehen höchstens mit „hoher Priorität“ an ntfy, nie mehr mit „Max“. Bei Ton an kommen sie deutlich mit Ton, Vibration und Vorschau, bei Ton aus still. Kein Dauerklingeln, kein „Nicht stören überschreiben“, nichts über den Wecker',
+      'Am Handy spielt die App selbst keinen Alarm-Ton und vibriert nicht beim Alarm-Fenster (sie würde sonst über die Medien-Lautstärke laut, auch bei Ton aus)',
+      'Anleitung in den Einstellungen und in der README angepasst',
+    ],
+  },
+  {
     v: '4.0.2', date: '2026-11-25', title: 'Reparatur: Handy-Push über ntfy',
     items: [
       'Tippen auf eine Push-Nachricht öffnet Zeitblick am Handy. Vorher zeigten die Links, die der Laptop plant, auf den Laptop selbst (127.0.0.1) und das Handy meldete „Website nicht erreichbar“',

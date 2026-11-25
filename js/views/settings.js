@@ -233,7 +233,7 @@ export function render(route) {
       ${calSection(s)}
 
       <section class="card set-sec" id="set-vorgaenge"><div class="card-head"><h2>Vorgänge & Ampel</h2></div>
-        <p class="small muted">So wandern deine Vorgänge durch die Ampel: Grün → Gelb (Frist naht) → Rot (überfällig) → Alarm (lange überfällig). Ab Rot kommen wiederholte Push-Nachrichten mit höchster Priorität, beim Öffnen erscheint ein rotes Alarm-Fenster.</p>
+        <p class="small muted">So wandern deine Vorgänge durch die Ampel: Grün → Gelb (Frist naht) → Rot (überfällig) → Alarm (lange überfällig). Ab Rot kommen wiederholte Push-Nachrichten mit hoher Priorität (am Handy deutlich, aber nur, wenn dein Ton an ist), beim Öffnen erscheint ein rotes Alarm-Fenster.</p>
         ${sw('amp.escOn', s.amp.escOn, 'Eskalation aktiv', 'Wiederholte Push-Erinnerungen und Alarm-Fenster für überfällige Vorgänge')}
         ${num('amp.yellowH', s.amp.yellowH, 'Gelb ab', 'Stunden vor Fälligkeit (P1 doppelt so früh, P4 halb so früh)', 1, 336, 1, 'Std')}
         ${num('amp.alarmH', s.amp.alarmH, 'Alarm nach', 'Stunden Überfälligkeit (P1 nach einem Viertel, P2 nach der Hälfte)', 1, 336, 1, 'Std')}
@@ -271,7 +271,7 @@ export function render(route) {
             ${handy
               ? `<li>Den Kanal <b>in der ntfy-App</b> abonnieren, nicht im Browser: <div class="row wrap" style="margin-top:6px"><a class="btn sm btn-primary" href="ntfy://${esc(server.replace(/^https?:\/\//, ''))}/${esc(topic)}">In der ntfy-App abonnieren</a><button class="btn sm" data-act="copytopic">Kanal kopieren</button></div><span class="hint">Klappt der erste Knopf nicht: „Kanal kopieren“, in ntfy auf „+“ tippen und einfügen (Server: ${esc(server.replace('https://', ''))}).</span></li>`
               : `<li>Den QR-Code mit dem Handy scannen: Zeitblick öffnet sich dort an dieser Stelle, dann „In der ntfy-App abonnieren“ tippen. Oder in ntfy auf „+“ tippen und den Kanal <span class="code">${esc(topic)}</span> eintragen (Server: ${esc(server.replace('https://', ''))}).</li>`}
-            <li>In ntfy beim Kanal Benachrichtigungen auf „Max. Priorität: Dauerhaft alarmieren“ stellen, wenn Alarm-Tickets nicht zu überhören sein sollen.</li>
+            <li>Ton folgt deinem Handy: Zeitblick schickt höchstens „hohe Priorität“. Bei Ton an kommen Pushs deutlich mit Ton und Vorschau, bei Ton aus still. In ntfy <b>nicht</b> „Dauerhaft alarmieren“ und nicht „Nicht stören überschreiben“ einschalten.</li>
             <li><button class="btn sm" data-act="testntfy">Test-Push senden</button></li>
           </ol></div>` : ''}
         <div class="field" style="margin-top:6px"><label for="s-appurl">Adresse der App (für Deep Links)</label><input id="s-appurl" class="input" data-settext="appUrl" value="${esc(s.appUrl || '')}" placeholder="${esc(N.pushUrl())}"><span class="hint">Tippst du am Handy auf eine Benachrichtigung, öffnet sich diese Adresse direkt an der richtigen Stelle. Leer lassen = ${esc(N.pushUrl())}.</span></div>

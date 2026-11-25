@@ -7,6 +7,10 @@ export const HORIZON_H = 70;
 export const ESC_AHEAD_H = 24;
 export const MAX_PLANNED = 40;
 export const PREFIX = 'zb-';
+/** Höchste Priorität, die an ntfy geht (Regel C10, 25.11.2026): 4 = „hoch“, deutlich mit Ton, Vibration und Vorschau,
+ *  aber über den normalen Benachrichtigungston. Damit folgt jeder Push dem Ton-Schalter des Handys. Priorität 5 („Max“)
+ *  bleibt aus: Bei ntfy hängen daran „Dauerhaft alarmieren“ und „Nicht stören überschreiben“. */
+export const MAX_PRIO = 4;
 
 export function cleanServer(server) { return String(server || 'https://ntfy.sh').trim().replace(/\/+$/, ''); }
 export function randomTopic() { return 'zeitblick-' + C.uid('', 14).toLowerCase(); }
@@ -47,7 +51,7 @@ export async function publish(server, topic, r, fetchFn = fetch, now = Date.now(
     topic,
     title: r.title,
     message: r.message,
-    priority: r.priority || 3,
+    priority: Math.min(MAX_PRIO, r.priority || 3),
     tags: r.tags && r.tags.length ? r.tags : undefined,
     click: withRid(r.click, r.rid),
     actions: (r.actions || []).slice(0, 3).map(a => ({ ...a })),

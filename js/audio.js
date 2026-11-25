@@ -72,6 +72,10 @@ export function stopNoise() {
   try { noise.src.stop(); if (noise.lfo) noise.lfo.stop(); } catch { }
   noise = null;
 }
+/** Gerät mit Touch als Hauptbedienung (Handy, Tablet). */
+export function amHandy() {
+  try { return typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches; } catch { return false; }
+}
 export function vibrate(p) {
   try {
     if (!navigator.vibrate || !window.matchMedia('(pointer: coarse)').matches) return;
